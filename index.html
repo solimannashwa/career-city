@@ -58,7 +58,7 @@ button,input,select{font-family:inherit}
 /* MAIN LAYOUT */
 .main{display:grid;grid-template-columns:1fr 300px;gap:12px;padding:12px;
   height:calc(100vh - 52px - 42px);min-height:0}
-.left{display:grid;grid-template-rows:auto auto 1fr;gap:12px;min-height:0;overflow:hidden}
+.left{display:grid;grid-template-rows:auto 1fr;gap:12px;min-height:0;overflow:hidden}
 .right{display:flex;flex-direction:column;gap:10px;overflow-y:auto}
 
 /* DOOR TRACK */
@@ -342,7 +342,7 @@ html,body{background:radial-gradient(circle at 50% 0%,#FFF8EA 0%,#F4EFE5 44%,#E7
   background-image:
     linear-gradient(90deg, rgba(247,240,227,.60), rgba(247,240,227,.20) 30%, rgba(247,240,227,.20) 70%, rgba(247,240,227,.60)),
     radial-gradient(circle at 50% 18%, rgba(255,255,255,.78), rgba(247,240,227,.20) 42%, rgba(11,26,43,.20) 100%),
-    url('campus_teacher_bg.jpg')!important;
+    url('assets/campus_teacher_bg.jpg')!important;
   background-size:cover!important;
   background-position:center!important;
   background-repeat:no-repeat!important;
@@ -351,7 +351,7 @@ html,body{background:radial-gradient(circle at 50% 0%,#FFF8EA 0%,#F4EFE5 44%,#E7
   background-image:
     linear-gradient(90deg, rgba(247,240,227,.55), rgba(247,240,227,.16) 30%, rgba(247,240,227,.16) 70%, rgba(247,240,227,.55)),
     radial-gradient(circle at 50% 20%, rgba(255,255,255,.72), rgba(247,240,227,.18) 44%, rgba(11,26,43,.20) 100%),
-    url('campus_student_bg.jpg')!important;
+    url('assets/campus_student_bg.jpg')!important;
 }
 #pin:before,.join-wrap:before{
   opacity:1!important;
@@ -545,8 +545,8 @@ html,body{background:radial-gradient(circle at 50% 0%,#FFF8EA 0%,#F4EFE5 44%,#E7
     <div>
       <div class="pt">Room Code</div>
       <div class="big-code" id="setupCode">—</div>
-      <div class="note">Students open student.html and enter this code.</div>
-      <div class="note">Smart board: open screen.html on BenQ PC — syncs automatically.</div>
+      <div class="note">Students scan the QR code or open student.html and enter this code.</div>
+      <div class="note">Smart board: open screen.html?room=ROOMCODE — syncs automatically.</div>
       <div style="text-align:center;margin-top:12px">
         <div id="qrWrap" onclick="toggleQR()" style="display:inline-block;cursor:pointer;position:relative">
           <canvas id="qrCanvas" width="150" height="150"
@@ -571,8 +571,8 @@ html,body{background:radial-gradient(circle at 50% 0%,#FFF8EA 0%,#F4EFE5 44%,#E7
     <div class="top-nav">
       <span class="pill" id="roundPill">Round 0</span>
       <button class="btn sm" style="background:rgba(255,255,255,.15);color:white;border-color:transparent" onclick="showScreen('setup')">Setup</button>
-      <button class="btn sm" style="background:rgba(255,255,255,.15);color:white;border-color:transparent" onclick="window.open('screen.html','_blank')">Smart Board ↗</button>
-      <button class="btn sm" style="background:rgba(255,255,255,.15);color:white;border-color:transparent" onclick="window.open('student.html','_blank')">Student ↗</button>
+      <button class="btn sm" style="background:rgba(255,255,255,.15);color:white;border-color:transparent" onclick="window.open('screen.html?room='+encodeURIComponent(G.room),'_blank')">Smart Board ↗</button>
+      <button class="btn sm" style="background:rgba(255,255,255,.15);color:white;border-color:transparent" onclick="window.open('student.html?room='+encodeURIComponent(G.room),'_blank')">Student ↗</button>
       <button class="btn sm" style="background:rgba(255,255,255,.15);color:white;border-color:transparent" id="muteBtn" onclick="toggleMusic()">🔊</button>
     </div>
   </div>
@@ -588,15 +588,14 @@ html,body{background:radial-gradient(circle at 50% 0%,#FFF8EA 0%,#F4EFE5 44%,#E7
       <div class="panel">
         <div class="pt" id="boardRound">ROUND 0 — PRE-GAME</div>
         <div class="door-track" id="doorTrack"></div>
+        <!-- ACTIVE DOOR DESCRIPTION — replaces round instruction when door is open -->
+        <div id="activeDoorBanner" style="display:none;margin-top:6px;padding:8px 12px;
+          background:linear-gradient(135deg,#FFFDF8,#F4E8D2);
+          border-left:3px solid var(--gold,#C99A3B);border-radius:8px">
+          <div id="activeDoorBannerName" style="font-size:.72rem;font-weight:900;color:var(--navy,#0B1A2B);margin-bottom:2px"></div>
+          <div id="activeDoorBannerStory" style="font-size:.75rem;color:#555;line-height:1.5"></div>
+        </div>
         <div class="round-instruction" id="roundInstruction"></div>
-      </div>
-      <!-- ACTIVE DOOR INFO — shown between doors and teams when a door is opened -->
-      <div id="activeDoorBanner" style="display:none;padding:10px 14px;
-        background:linear-gradient(135deg,#FFFDF8,#F4E8D2);
-        border:1.5px solid var(--gold,#C99A3B);border-radius:12px;flex-shrink:0">
-        <div id="activeDoorBannerName" style="font-size:.78rem;font-weight:900;color:var(--navy,#0B1A2B);margin-bottom:4px"></div>
-        <div id="activeDoorBannerStory" style="font-size:.78rem;color:#555;line-height:1.5;margin-bottom:6px"></div>
-        <div id="activeDoorBannerQuestions" style="display:flex;flex-direction:column;gap:4px"></div>
       </div>
       <div class="panel teams-panel">
         <div class="pt">Teams &amp; Scores — Tap + After Each Student Speaks</div>
@@ -937,7 +936,7 @@ const DOOR_DISPLAY=[
   {title:'Wellness Studio',sub:'Wellness Coach Path'},
   {title:'Design Studio',sub:'Creative Designer Path'}
 ];
-function doorAsset(i){return `door${i+1}.png`;}
+function doorAsset(i){return `assets/door${i+1}.png`;}
 function doorTitle(i){return DOOR_DISPLAY[i]?.title || DOORS[i]?.name || '';}
 function doorSub(i){return DOOR_DISPLAY[i]?.sub || '';}
 function checkPin(){
@@ -1171,17 +1170,8 @@ function openDoor(i){
     const d=DOORS[i];
     bannerName.textContent=`${d.icon} ${d.name} — ${d.price} coins`;
     bannerStory.textContent=d.story;
-    const qEl=document.getElementById('activeDoorBannerQuestions');
-    if(qEl){
-      qEl.innerHTML=d.q.map(([lv,tx])=>`
-        <div style="display:flex;gap:8px;align-items:flex-start;padding:5px 8px;background:white;border-radius:7px;border:1px solid var(--border)">
-          <span style="flex-shrink:0;padding:2px 7px;border-radius:999px;font-size:.6rem;font-weight:900;
-            background:${lv==='start'?'#ECFDF5':lv==='build'?'#EFF6FF':'#F5F3FF'};
-            color:${lv==='start'?'#065F46':lv==='build'?'#1E40AF':'#5B21B6'}">${lv==='start'?'+1':lv==='build'?'+2':'+3'}</span>
-          <span style="font-size:.78rem;color:#333;line-height:1.5">${tx}</span>
-        </div>`).join('');
-    }
     banner.style.display='block';
+    // Hide round instruction to avoid crowding
     const ins=document.getElementById('roundInstruction');
     if(ins)ins.classList.remove('show');
   }
@@ -1473,7 +1463,9 @@ function updateTimerDisplay(){
 }
 
 function generateQR(){
-  const url='https://solimannashwa.github.io/career-city/student.html?room='+G.room;
+  const joinUrl=new URL('student.html', window.location.href);
+  joinUrl.searchParams.set('room', G.room);
+  const url=joinUrl.href;
   const c=document.getElementById('qrCanvas');
   if(c&&typeof QRious!=='undefined')new QRious({element:c,value:url,size:150,background:'#ffffff',foreground:'#071421'});
   const cl=document.getElementById('qrCanvasLarge');

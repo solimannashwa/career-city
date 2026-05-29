@@ -467,7 +467,11 @@ function _wsSend(msg){
 
 // Generate QR codes
 function generateScreenQR(){
-  const url='https://career-city-811d01.netlify.app/student.html'+(G&&G.room?'?room='+G.room:'');
+  const joinUrl=new URL('student.html', window.location.href);
+  const urlRoom=new URLSearchParams(window.location.search).get('room');
+  const room=(G&&G.room)||urlRoom||'';
+  if(room)joinUrl.searchParams.set('room', room);
+  const url=joinUrl.href;
   const mini=document.getElementById('qrScreenMini');
   const large=document.getElementById('qrScreenLarge');
   if(typeof QRious!=='undefined'){
@@ -480,13 +484,16 @@ function toggleScreenQR(){
   ov.style.display=ov.style.display==='flex'?'none':'flex';
 }
 
+// Show QR immediately when screen is opened with ?room=CODE, then refresh after sync arrives
+generateScreenQR();
+
 // Cross-device sync
 syncInit((state)=>{
   if(state){G=state;render();checkStudentAction(state);generateScreenQR();}
 });
 // Same-device fallback
 setInterval(()=>{
-  try{const s=JSON.parse(localStorage.getItem(CH)||'null');if(s){G=s;render();checkStudentAction(s);}}catch(e){}
+  try{const s=JSON.parse(localStorage.getItem(CH)||'null');if(s){G=s;render();checkStudentAction(s);generateScreenQR();}}catch(e){}
 },2000);
 
 function checkStudentAction(s){
@@ -528,7 +535,7 @@ const DOOR_DISPLAY=[
   {title:'Wellness Studio',sub:'Wellness Coach Path'},
   {title:'Design Studio',sub:'Creative Designer Path'}
 ];
-function doorAsset(i){return `door${i+1}.png`;}
+function doorAsset(i){return `assets/door${i+1}.png`;}
 function doorTitle(i){return DOOR_DISPLAY[i]?.title || DOORS[i]?.name || '';}
 function doorSub(i){return DOOR_DISPLAY[i]?.sub || '';}
 function render(){
