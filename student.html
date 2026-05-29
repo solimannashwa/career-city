@@ -1,0 +1,1602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>The Door Auction — Student</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FFF8F0;--white:#fff;--dark:#1A0A2E;--border:#E8DDD5;--muted:#888;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);font-family:'Space Grotesk',sans-serif;color:var(--dark)}
+.screen{display:none;min-height:100vh;flex-direction:column}
+.screen.active{display:flex}
+button,input{font-family:inherit}
+.btn{border:1.5px solid var(--border);border-radius:10px;background:white;color:var(--dark);
+  padding:10px 18px;font-weight:700;cursor:pointer;transition:.15s;font-size:.9rem}
+.btn:hover{border-color:var(--dark);transform:translateY(-1px)}
+.btn.primary{background:var(--dark);color:white;border-color:var(--dark)}
+.btn.full{width:100%;padding:15px;font-size:1rem;margin-top:12px}
+.btn.sm{font-size:.78rem;padding:7px 14px}
+
+/* STATUS BAR */
+.status-bar{background:var(--dark);color:white;display:flex;align-items:center;
+  justify-content:space-between;padding:10px 16px;position:sticky;top:0;z-index:50;flex-shrink:0}
+.sb-game{font-family:'Bebas Neue';letter-spacing:3px;font-size:1.1rem}
+.sb-game span{color:#C084FC}
+.sb-right{display:flex;gap:10px;align-items:stretch}
+.sb-stat{min-width:92px;padding:8px 10px;border-radius:14px;background:rgba(255,255,255,.075);
+  border:1px solid rgba(212,175,55,.32);display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;
+  column-gap:8px;align-items:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+.sb-icon{grid-row:1/3;width:34px;height:34px;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0}
+.sb-val{font-family:'Bebas Neue';font-size:2.45rem;line-height:.9;letter-spacing:1px;text-align:left}
+.sb-lbl{font-size:.62rem;font-weight:900;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.66);text-align:left}
+
+/* Premium student progress icons */
+.ico-coin{width:31px;height:31px;border-radius:50%;background:
+  radial-gradient(circle at 35% 28%,#FFF4B8 0 14%,#F7C84B 28%,#D79A18 58%,#8E5B05 100%);
+  border:2px solid #FFE6A3;box-shadow:0 3px 0 #7A4A00,0 5px 14px rgba(255,190,46,.28),inset 0 0 0 3px rgba(140,82,0,.18)}
+.ico-coin::before{content:"";position:absolute;inset:6px;border-radius:50%;border:2px solid rgba(105,62,0,.34)}
+.ico-coin::after{content:"$";position:absolute;font-family:'Bebas Neue';font-size:1.15rem;font-weight:900;color:#704500;text-shadow:0 1px rgba(255,255,255,.65)}
+.ico-door{width:27px;height:34px;border-radius:13px 13px 5px 5px;background:
+  linear-gradient(145deg,#F7E7C2 0%,#C69042 38%,#6E3E17 100%);
+  border:2px solid #F7D58C;box-shadow:0 4px 12px rgba(0,0,0,.25),inset 0 0 0 2px rgba(255,255,255,.18)}
+.ico-door::before{content:"";position:absolute;left:6px;right:6px;top:7px;bottom:6px;border-radius:9px 9px 4px 4px;border:1.5px solid rgba(62,35,12,.55)}
+.ico-door::after{content:"";position:absolute;right:6px;top:17px;width:5px;height:5px;border-radius:50%;background:#FFD36A;box-shadow:0 0 0 1px #7A4A00}
+.ico-star{font-size:2.55rem;line-height:1;color:#D4AF37;text-shadow:0 2px 0 #6E4A08,0 0 14px rgba(212,175,55,.45)}
+@media(max-width:560px){.status-bar{padding:8px 10px}.sb-right{gap:6px}.sb-stat{min-width:72px;padding:7px 7px;column-gap:6px}.sb-icon{width:27px;height:29px}.sb-val{font-size:2rem}.sb-lbl{font-size:.5rem;letter-spacing:1.2px}.ico-coin{width:25px;height:25px}.ico-door{width:22px;height:28px}.ico-star{font-size:2.05rem}}
+
+/* STEP INDICATOR */
+.step-ind{background:white;border-bottom:1.5px solid var(--border);
+  display:flex;align-items:center;padding:7px 16px;gap:0;overflow-x:auto;flex-shrink:0}
+.si-item{display:flex;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;
+  font-size:.6rem;font-weight:700;color:var(--muted);white-space:nowrap}
+.si-item.active{background:#f0e8ff;color:#7C3AED}
+.si-item.done{color:#2E7D32}
+.si-num{width:15px;height:15px;border-radius:50%;background:#eee;
+  display:flex;align-items:center;justify-content:center;font-size:.52rem;font-weight:900}
+.si-item.active .si-num{background:#7C3AED;color:white}
+.si-item.done .si-num{background:#2E7D32;color:white}
+.si-arr{color:var(--border);font-size:.55rem;margin:0 1px}
+
+/* COIN FLY */
+@keyframes coinFly{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-30px)}}
+.coin-fly{position:fixed;pointer-events:none;font-family:'Bebas Neue';font-size:1.2rem;
+  color:#DC2626;z-index:999;animation:coinFly .7s ease-out forwards;font-weight:900}
+
+.panel{background:white;border:1.5px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px}
+.pt{font-size:.62rem;text-transform:uppercase;letter-spacing:2px;color:var(--muted);
+  font-weight:800;margin-bottom:12px;display:flex;align-items:center;gap:7px}
+.pt::before{content:"";width:14px;height:2px;background:var(--dark);opacity:.2}
+.body{padding:14px;flex:1}
+
+/* JOIN */
+.join-wrap{flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:28px;text-align:center;background:var(--bg)}
+.logo{font-family:'Bebas Neue';font-size:clamp(2.8rem,10vw,5rem);color:var(--dark);
+  letter-spacing:5px;line-height:.9;margin-bottom:6px}
+.logo span{color:#7C3AED}
+.sub{font-size:.72rem;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:24px}
+.steps-list{display:flex;flex-direction:column;gap:8px;margin-bottom:24px;max-width:300px;text-align:left;width:100%}
+.step-row{display:flex;align-items:center;gap:12px;padding:10px 14px;
+  border-radius:10px;background:white;border:1.5px solid var(--border)}
+.step-num-big{width:28px;height:28px;border-radius:50%;
+  background:#f0e8ff;border:1.5px solid #C4B5FD;color:#7C3AED;
+  font-family:'Bebas Neue';font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step-text{font-size:.82rem;color:#555;line-height:1.4}
+.code-in{width:100%;max-width:260px;padding:18px;border-radius:12px;
+  border:2px solid var(--border);background:white;color:var(--dark);
+  font-family:'Bebas Neue';font-size:2.5rem;text-align:center;letter-spacing:8px;
+  outline:none;transition:.2s;margin-bottom:14px}
+.code-in:focus{border-color:#7C3AED}
+.team-label{font-size:.82rem;font-weight:700;color:var(--muted);margin-bottom:10px}
+.team-btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:22px}
+.tb{padding:10px 18px;border-radius:10px;border:1.5px solid var(--border);
+  background:white;color:var(--muted);cursor:pointer;font-size:.85rem;font-weight:700;transition:.2s;font-family:inherit}
+.tb.sel{border-width:2px;color:var(--tc,var(--dark));background:color-mix(in srgb,var(--tc,var(--dark)) 8%,white)}
+
+/* WAIT */
+.wait-wrap{flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;text-align:center;padding:28px;gap:16px;background:var(--bg)}
+.wait-pulse{width:70px;height:70px;border-radius:50%;background:#f0e8ff;
+  border:2px solid #C4B5FD;display:flex;align-items:center;justify-content:center;
+  font-size:2rem;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+.wait-team{font-family:'Bebas Neue';font-size:2rem;letter-spacing:4px}
+.wait-text{font-size:1rem;color:#555;line-height:1.6;max-width:300px}
+
+/* PREP TIMER */
+.prep-box{text-align:center;padding:18px;border-radius:14px;
+  border:2px solid #C4B5FD;background:#f5f0ff;margin-bottom:14px;display:none}
+.prep-box.show{display:block;animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.prep-lbl{font-size:.65rem;font-weight:800;letter-spacing:3px;color:#7C3AED;
+  text-transform:uppercase;margin-bottom:6px}
+.prep-num{font-family:'Bebas Neue';font-size:4.5rem;color:#7C3AED;line-height:1;transition:color .3s}
+.prep-num.warn{color:#D97706}
+.prep-num.danger{color:#DC2626;animation:bl .5s infinite}
+@keyframes bl{50%{opacity:.4}}
+.prep-sub{font-size:.75rem;color:#666;margin-top:4px}
+
+/* DOOR GRID */
+.door-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(min-width:560px){.door-grid{grid-template-columns:repeat(4,1fr)}}
+.sd{padding:14px 10px;border-radius:12px;background:white;
+  border:2px solid transparent;cursor:pointer;transition:.2s;text-align:center;
+  box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.sd::before{content:"";display:block;height:4px;border-radius:4px;
+  background:var(--dc);margin-bottom:8px;margin-top:-2px;border-radius:10px 10px 0 0;
+  position:absolute;top:0;left:0;right:0;border-radius:10px 10px 0 0}
+.sd{position:relative;overflow:hidden}
+.sd:hover{border-color:var(--dc);box-shadow:0 4px 16px rgba(0,0,0,.1);transform:translateY(-2px)}
+.sd.current{border-color:var(--dc);background:color-mix(in srgb,var(--dc) 6%,white)}
+.sd-icon{font-size:1.6rem;margin:8px 0 5px}
+.sd-name{font-size:.78rem;font-weight:800;color:var(--dark);line-height:1.2;margin-bottom:3px}
+.sd-price{font-size:.7rem;font-weight:700}
+.sd-owned{font-size:.62rem;color:#2E7D32;font-weight:700;margin-top:3px}
+
+/* DOOR DETAIL */
+.door-detail-wrap{animation:fadeIn .3s ease}
+.detail-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.detail-story{padding:14px;border-radius:11px;background:#f8f4ff;border:1.5px solid #E9D5FF;margin-bottom:10px}
+.ds-title{font-size:.88rem;font-weight:800;margin-bottom:7px;color:var(--dark)}
+.ds-text{font-size:.95rem;color:#444;line-height:1.65}
+
+/* QUESTIONS */
+.q-list{display:flex;flex-direction:column;gap:9px;margin-bottom:12px}
+.q-btn{width:100%;padding:16px;border-radius:12px;border:2px solid var(--border);
+  background:white;color:var(--dark);text-align:left;cursor:pointer;transition:.2s;
+  display:flex;gap:12px;align-items:flex-start;font-family:inherit;
+  box-shadow:0 2px 6px rgba(0,0,0,.05)}
+.q-btn:hover{border-color:var(--dark);box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.q-btn.sel{border-color:#7C3AED;background:#f5f0ff}
+.q-lv{flex-shrink:0;padding:3px 9px;border-radius:999px;font-size:.65rem;font-weight:900;margin-top:2px}
+.q-lv.start{background:#ECFDF5;color:#065F46}
+.q-lv.build{background:#EFF6FF;color:#1E40AF}
+.q-lv.challenge{background:#F5F3FF;color:#5B21B6}
+.q-text{font-size:18px;line-height:1.55;color:var(--dark)}
+
+/* SPEAKING OVERLAY */
+.speak-overlay{position:fixed;inset:0;background:rgba(245,240,255,.97);
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  z-index:200;text-align:center;padding:28px}
+.speak-overlay.active{display:flex;animation:fadeIn .3s ease}
+.speak-q{font-size:1.15rem;font-weight:500;color:var(--dark);line-height:1.6;
+  max-width:480px;margin-bottom:24px;padding:20px;border-radius:14px;
+  background:white;border:2px solid #E9D5FF}
+
+/* SAND CLOCK BIG */
+.sand-wrap{position:relative;width:160px;height:200px;margin:0 auto 14px}
+.sand-svg{width:100%;height:100%}
+.sand-digs{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  font-family:'Bebas Neue';font-size:2.5rem;color:var(--dark);letter-spacing:2px;transition:color .3s}
+.sand-digs.warn{color:#D97706}
+.sand-digs.danger{color:#DC2626;animation:bl .5s infinite}
+
+.speak-lbl{font-size:.75rem;letter-spacing:4px;color:var(--muted);text-transform:uppercase;margin-bottom:18px}
+.speak-frame{padding:14px 18px;border-radius:12px;background:white;border:1.5px solid #E9D5FF;max-width:420px;text-align:left;margin-bottom:18px}
+.sf-title{font-size:.6rem;font-weight:800;letter-spacing:2px;color:#7C3AED;text-transform:uppercase;margin-bottom:8px}
+.sf-item{font-size:.88rem;color:#444;line-height:1.9}
+.sf-item span{color:#7C3AED;font-weight:700}
+
+/* HC NOTIF */
+.hc-notif{padding:16px;border-radius:14px;background:#FFF5F5;
+  border:2px solid #FCA5A5;margin-bottom:14px;display:none}
+.hc-notif.show{display:block;animation:fadeIn .4s ease}
+.hcn-lbl{font-size:.62rem;font-weight:800;letter-spacing:2px;color:#DC2626;text-transform:uppercase;margin-bottom:8px}
+.hcn-door{font-size:1rem;font-weight:800;margin-bottom:6px;color:var(--dark)}
+.hcn-cost{font-size:.92rem;color:#7F1D1D;font-style:italic;line-height:1.6;margin-bottom:12px}
+.hcn-frames{display:flex;flex-direction:column;gap:7px}
+.hcn-f{padding:10px 14px;border-radius:9px;background:white;border:1.5px solid #FCA5A5;
+  cursor:pointer;transition:.2s;font-size:.88rem;color:#666}
+.hcn-f:hover{background:#FFF5F5;color:var(--dark)}
+.hcn-f span{color:#7C3AED;font-weight:700}
+
+/* LANGUAGE FRAMES */
+.lf-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.lf{padding:10px 13px;border-radius:10px;background:white;
+  border-left:3px solid #C4B5FD;font-size:16px;color:#444;line-height:1.5}
+.lf strong{color:#7C3AED}
+
+/* DONE */
+.done-wrap{flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;text-align:center;padding:28px;gap:16px;background:var(--bg)}
+.done-icon{font-size:3.5rem}
+.done-title{font-family:'Bebas Neue';font-size:3rem;letter-spacing:4px;color:#2E7D32}
+.done-text{font-size:1rem;color:#555;line-height:1.7;max-width:300px}
+.next-btn{margin-top:10px;padding:14px 28px;border-radius:12px;
+  background:#f0e8ff;border:2px solid #C4B5FD;color:#7C3AED;
+  font-family:'Space Grotesk';font-size:.95rem;font-weight:800;cursor:pointer;transition:.2s}
+.next-btn:hover{background:#e8d8ff}
+
+/* EXPLORE SCREEN */
+.explore-grid{display:flex;flex-direction:column;gap:12px}
+.explore-card{background:white;border-radius:14px;border:2px solid var(--border);overflow:hidden;
+  box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.ec-top{height:6px}
+.ec-body{padding:14px}
+.ec-header{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.ec-icon{font-size:2rem;width:48px;height:56px;border-radius:10px 10px 4px 4px;
+  display:flex;align-items:center;justify-content:center;border:2px solid}
+.ec-name{font-size:1rem;font-weight:800;color:var(--dark)}
+.ec-price{font-size:.78rem;font-weight:700;margin-top:2px}
+.ec-story{font-size:.88rem;color:#444;line-height:1.65}
+
+
+/* COMPLETE SPEAKING SCREEN REDESIGN — stage mode, no hourglass/prep confusion */
+.prep-box{display:none!important}
+.speak-overlay{
+  position:fixed;inset:0;display:none;z-index:200;padding:22px;
+  background:
+    radial-gradient(circle at top left, rgba(255,107,0,.30), transparent 32%),
+    radial-gradient(circle at bottom right, rgba(124,58,237,.34), transparent 38%),
+    linear-gradient(135deg,#13051f 0%,#261044 48%,#12051f 100%);
+  color:white;overflow:auto;align-items:center;justify-content:center;text-align:center;
+}
+.speak-overlay.active{display:flex;animation:fadeIn .22s ease}
+.speak-overlay::before{
+  content:"THE FLOOR IS YOURS";position:absolute;top:18px;left:50%;transform:translateX(-50%);
+  font-family:'Bebas Neue';letter-spacing:6px;font-size:1.25rem;color:rgba(255,255,255,.55);white-space:nowrap;
+}
+.speak-overlay::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px);
+  background-size:48px 48px;mask-image:linear-gradient(to bottom,transparent,black 18%,black 85%,transparent);
+}
+.speak-q{
+  position:relative;z-index:1;max-width:760px;width:min(92vw,760px);margin:34px auto 22px;
+  background:rgba(255,255,255,.96);color:#1A0A2E;border:0;border-radius:24px;
+  box-shadow:0 20px 70px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.18);
+  padding:24px 28px;font-size:clamp(1.25rem,3.4vw,2rem);font-weight:900;line-height:1.35;
+}
+.speak-q::before{
+  content:"SPEAKING QUESTION";display:block;margin-bottom:10px;font-size:.68rem;letter-spacing:3px;color:#7C3AED;font-weight:900;
+}
+.sand-wrap{
+  --timer-progress:1;width:220px;height:220px;margin:0 auto 20px;position:relative;z-index:1;border-radius:50%;
+  background:conic-gradient(#FF6B00 calc(var(--timer-progress)*360deg),rgba(255,255,255,.16) 0deg);
+  display:flex;align-items:center;justify-content:center;box-shadow:0 0 46px rgba(255,107,0,.28),inset 0 0 0 1px rgba(255,255,255,.2);
+}
+.sand-wrap::before{content:"";position:absolute;inset:14px;border-radius:50%;background:linear-gradient(135deg,#fff,#F6EFFF);box-shadow:inset 0 0 0 1px rgba(26,10,46,.08)}
+.sand-svg{display:none!important}
+.sand-digs{position:relative;top:auto;left:auto;transform:none;z-index:2;font-family:'Bebas Neue';font-size:6.8rem;letter-spacing:2px;color:#1A0A2E;line-height:.9;text-shadow:none}
+.sand-digs.warn{color:#D97706}.sand-digs.danger{color:#DC2626;animation:bl .5s infinite}
+.speak-lbl{position:relative;z-index:1;color:rgba(255,255,255,.78);font-size:.78rem;letter-spacing:5px;margin-bottom:16px;font-weight:900}
+.speak-frame{
+  position:relative;z-index:1;max-width:760px;width:min(92vw,760px);margin:0 auto 22px;text-align:left;
+  background:rgba(255,255,255,.10);border:1.5px solid rgba(255,255,255,.22);border-radius:20px;
+  backdrop-filter:blur(10px);padding:18px 22px;box-shadow:0 12px 40px rgba(0,0,0,.20)
+}
+.sf-title{color:#FCD34D;font-size:.72rem;letter-spacing:3px;margin-bottom:10px}
+.sf-item{color:rgba(255,255,255,.84);font-size:1rem;line-height:1.9}.sf-item span{color:white;font-weight:900}
+.speak-overlay .btn{position:relative;z-index:1;background:#fff!important;color:#1A0A2E!important;border:0!important;border-radius:18px!important;padding:15px 28px!important;font-size:1rem!important;box-shadow:0 14px 35px rgba(0,0,0,.28);font-weight:900}
+@media(max-width:560px){.speak-q{font-size:1.25rem;padding:20px}.sand-wrap{width:190px;height:190px}.sand-digs{font-size:5.7rem}.sf-item{font-size:.95rem}}
+
+
+
+/* ===== PREMIUM HIGHER-EDUCATION SIMULATION THEME ===== */
+:root{
+  --bg:#F4EFE5;--white:#fff;--dark:#0B1A2B;--navy:#0B1A2B;--navy2:#132B46;
+  --ivory:#F7F0E3;--gold:#C99A3B;--gold2:#E5C16B;--teal:#0E6B72;
+  --border:#D6C6A8;--muted:#7B7569;--burgundy:#5C1426;--forest:#123A2D;
+}
+html,body{background:radial-gradient(circle at 50% 0%,#FFF8EA 0%,#F4EFE5 44%,#E7DAC4 100%);color:var(--navy)}
+.top{background:linear-gradient(135deg,#071421,#132B46);border-bottom:1px solid rgba(201,154,59,.45);box-shadow:0 8px 24px rgba(11,26,43,.18)}
+.brand,.top-title{font-family:Georgia,'Times New Roman',serif!important;font-weight:800;letter-spacing:2px!important;color:#F8F0DD!important}.brand span,.top-title span{color:var(--gold2)!important}
+.round-badge,.pill{background:rgba(247,240,227,.1)!important;border:1px solid rgba(229,193,107,.38)!important;color:#F7F0E3!important}
+.panel,.story-panel,.tc,.dc,.student-card,.sd,.explore-card,.q-btn{border-color:var(--border)!important;box-shadow:0 12px 30px rgba(11,26,43,.08)}
+.btn.primary,.btn.primary:hover{background:linear-gradient(135deg,#071421,#123A46)!important;color:#F8F0DD!important;border-color:var(--gold)!important;box-shadow:0 10px 24px rgba(11,26,43,.18)}
+
+/* Premium first-page / landing screens */
+#pin,.join-wrap{
+  background:
+    radial-gradient(circle at 50% 22%, rgba(229,193,107,.24), transparent 32%),
+    linear-gradient(rgba(244,239,229,.82),rgba(244,239,229,.88)),
+    linear-gradient(135deg,#d2c3aa,#f7f0e3 42%,#b6a17c);
+  position:relative;overflow:hidden;color:var(--navy)!important;
+}
+#pin:before,.join-wrap:before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.42;background:
+  linear-gradient(110deg, transparent 0 8%, rgba(11,26,43,.12) 8% 9%, transparent 9% 19%, rgba(201,154,59,.14) 19% 20%, transparent 20%),
+  radial-gradient(ellipse at 20% 78%, rgba(11,26,43,.14), transparent 22%),
+  radial-gradient(ellipse at 80% 74%, rgba(14,107,114,.14), transparent 24%)}
+#pin:after,.join-wrap:after{content:"";position:absolute;left:0;right:0;bottom:0;height:36%;pointer-events:none;opacity:.38;background:
+  repeating-linear-gradient(90deg,rgba(11,26,43,.13) 0 2px, transparent 2px 92px),
+  repeating-linear-gradient(0deg,rgba(201,154,59,.18) 0 2px, transparent 2px 72px);clip-path:polygon(0 22%,100% 0,100% 100%,0 100%)}
+.landing-shell{position:relative;z-index:1;width:min(980px,92vw);display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px}
+.landing-logo{font-family:Georgia,'Times New Roman',serif;font-weight:900;line-height:.9;letter-spacing:2px;font-size:clamp(3.4rem,8vw,7rem);color:var(--navy);text-shadow:0 4px 0 rgba(255,255,255,.65),0 18px 32px rgba(11,26,43,.18)}
+.landing-logo .gold{display:block;color:var(--gold);font-size:.82em;text-shadow:0 3px 0 rgba(255,255,255,.7),0 16px 28px rgba(94,62,17,.22)}
+.landing-ribbon{margin-top:2px;background:linear-gradient(135deg,#071421,#132B46);color:#F7F0E3;border:1px solid var(--gold);border-radius:999px;padding:8px 28px;font-weight:900;letter-spacing:4px;text-transform:uppercase;box-shadow:0 8px 22px rgba(11,26,43,.22)}
+.landing-slogan{font-family:Georgia,'Times New Roman',serif;font-weight:800;letter-spacing:4px;font-size:clamp(1.1rem,2.7vw,2rem);color:var(--navy);margin:4px 0 0}.landing-slogan .dot{color:var(--teal);margin:0 10px}.landing-note{font-weight:700;color:#314154;font-size:1rem}
+.access-panel{width:min(620px,92vw);background:rgba(255,251,242,.93);border:1.5px solid var(--border);border-radius:28px;padding:22px 28px;box-shadow:0 22px 55px rgba(11,26,43,.18),inset 0 1px 0 rgba(255,255,255,.9);position:relative;overflow:visible}
+.access-panel h2{font-family:Georgia,'Times New Roman',serif;font-size:1.55rem;letter-spacing:2px;margin:0 0 4px;color:var(--navy);text-transform:uppercase}.access-panel p{margin:0 0 14px;color:#425064;font-weight:600}.pin-input,.code-in{background:#FFFDF8!important;color:var(--navy)!important;border:1.5px solid #BCA879!important;box-shadow:inset 0 3px 10px rgba(11,26,43,.06);border-radius:12px!important}.pin-input{width:210px!important;font-size:2rem!important;letter-spacing:10px!important}.landing-btn,.join-wrap .btn.primary{background:linear-gradient(135deg,#071421,#0E3D45)!important;color:#F9EDD4!important;border:1px solid var(--gold)!important;border-radius:12px!important;padding:14px 34px!important;font-size:1rem!important;font-weight:900!important;letter-spacing:1px;box-shadow:0 12px 28px rgba(11,26,43,.22)}
+.landing-signature,.sig,.sig-title{position:relative;z-index:1}.landing-signature{margin-top:4px;background:linear-gradient(135deg,#071421,#132B46);color:#F7F0E3;border:1px solid var(--gold);border-radius:16px;padding:10px 34px;box-shadow:0 14px 28px rgba(11,26,43,.22)}.landing-signature strong{display:block;font-family:Georgia,'Times New Roman',serif;font-size:1.2rem;letter-spacing:1.5px}.landing-signature span{display:block;font-size:.75rem;color:var(--gold2);font-weight:800;margin-top:2px}
+.team-btns{gap:10px!important}.tb{background:linear-gradient(135deg,#10233A,#1D3550)!important;color:#F7F0E3!important;border:1px solid rgba(201,154,59,.55)!important;border-radius:12px!important;box-shadow:0 10px 20px rgba(11,26,43,.16);font-weight:900!important}.tb.sel{background:linear-gradient(135deg,var(--tc,#0E6B72),#071421)!important;color:#fff!important;border-color:var(--gold)!important;transform:translateY(-2px)}
+
+/* Premium career cards */
+.career-card-img{display:block;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 10px 16px rgba(11,26,43,.16));border-radius:12px}.dc.card-mode{background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;overflow:visible!important}.dc.card-mode.active{transform:translateY(-5px) scale(1.015);filter:drop-shadow(0 0 16px rgba(201,154,59,.42))}.dc.card-mode.owned{opacity:.95}.dc.card-mode .career-card-wrap{position:relative;width:100%;height:100%;min-height:122px}.dc.card-mode .dc-owners{position:absolute;left:9%;right:9%;bottom:6%;justify-content:center}.dc.card-mode .ot{background:linear-gradient(135deg,#071421,#0E6B72)!important;border:1px solid var(--gold);font-size:.55rem;color:#F7F0E3}.dc.card-mode .dc-open-btn{margin-top:4px;background:linear-gradient(135deg,#071421,#123A46)!important;color:#F8F0DD!important;border:1px solid var(--gold)!important;border-radius:10px!important}.door-visual-large{width:120px;max-width:26vw;border-radius:18px;box-shadow:0 16px 30px rgba(11,26,43,.18);border:1px solid var(--gold);background:#fff}.sp-icon{font-size:0!important}.sp-header{align-items:flex-start}.sp-name{font-family:Georgia,'Times New Roman',serif!important;letter-spacing:.5px;color:var(--navy)!important}.sp-price{color:var(--gold)!important}.story-panel{background:linear-gradient(135deg,#FFFDF8,#F6EBD8)!important;border-color:var(--gold)!important;border-radius:22px!important}
+
+/* Smart board and cards */
+.main{background:radial-gradient(circle at 50% 0%,rgba(229,193,107,.16),transparent 36%)}.teams-row .tc,.tg .tc{background:linear-gradient(135deg,#FFFDF8,#F3E8D5)!important;border-radius:18px!important;border:1.5px solid var(--border)!important}.tc.lead{box-shadow:0 0 0 2px var(--gold),0 18px 36px rgba(11,26,43,.14)!important}.tc-name{font-family:Georgia,'Times New Roman',serif!important}.tc-score{font-family:Georgia,'Times New Roman',serif!important;font-weight:900!important;color:var(--navy)!important}.spoke-section{background:rgba(11,26,43,.04)!important;border:1px solid rgba(188,168,121,.35)!important}.door-chip{background:linear-gradient(135deg,#071421,#0E6B72)!important;border:1px solid var(--gold);color:#F7F0E3!important}.float-speak-timer{background:linear-gradient(135deg,#071421,#0E3D45)!important;border-color:var(--gold)!important;color:#F8F0DD!important}.float-speak-timer.warn{background:linear-gradient(135deg,#745019,#C99A3B)!important}.float-speak-timer.danger{background:linear-gradient(135deg,#5C1426,#9F2D3E)!important}
+
+/* Risk / sold moments */
+.hc-overlay{background:rgba(10,16,24,.82)!important}.hco-eye{color:var(--gold2)!important}.hco-name,.po-title{font-family:Georgia,'Times New Roman',serif!important;color:#F7F0E3!important}.hco-cost{background:rgba(255,251,242,.94);border:1px solid var(--gold);border-radius:20px;padding:22px;color:#5C1426!important;box-shadow:0 22px 60px rgba(0,0,0,.25)}.hco-react{border-color:var(--gold)!important}.power-overlay{background:rgba(10,16,24,.84)!important}.po-bonus{color:var(--gold2)!important}.sold-toast,.sold-flash{background:linear-gradient(135deg,#071421,#132B46)!important;border-color:var(--gold)!important}.sold-word,.sold-flash strong{color:var(--gold2)!important}
+
+/* Student speaking premium stage */
+.speak-overlay{background:radial-gradient(circle at 50% 0%,rgba(201,154,59,.25),transparent 36%),linear-gradient(135deg,#071421,#132B46)!important}.speak-q{background:rgba(255,251,242,.96)!important;border:1.5px solid var(--gold)!important;color:var(--navy)!important;border-radius:24px!important;box-shadow:0 22px 60px rgba(0,0,0,.28)!important}.timer-ring{border-color:rgba(201,154,59,.42)!important;background:rgba(255,251,242,.08)!important}.timer-ring::before{background:#071421!important;border-color:var(--gold)!important}.speak-num{color:#F7F0E3!important}.speak-frame{background:rgba(255,251,242,.96)!important;border:1.5px solid var(--gold)!important;color:var(--navy)!important}.sf-title{color:var(--teal)!important}.sf-item span{color:#8A5E19!important}
+
+/* Student door cards */
+.sd.premium-door{background:transparent!important;border:0!important;padding:0!important;box-shadow:none!important;opacity:1!important;overflow:visible!important}.sd.premium-door.waiting{filter:grayscale(.18) opacity(.52);pointer-events:none}.sd.premium-door.current{filter:none;transform:translateY(-2px)}.sd.premium-door img{width:100%;border-radius:16px;box-shadow:0 14px 28px rgba(11,26,43,.18);border:1px solid var(--gold)}.premium-door-state{margin-top:6px;text-align:center;font-size:.7rem;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--teal)}.explore-card.premium{padding:0;overflow:hidden}.explore-card.premium img{width:100%;display:block}.explore-card.premium .ec-body{padding:12px 14px;background:#FFFDF8}.door-grid{grid-template-columns:1fr 1fr!important;gap:14px!important}@media(min-width:560px){.door-grid{grid-template-columns:repeat(2,1fr)!important}}
+
+/* Teacher control-room polish */
+.right{scrollbar-color:var(--gold) rgba(11,26,43,.08)}.timer-modes .tm-btn,.rb,.qi,.buy-row select,.hc-btn{border-color:var(--border)!important}.tm-btn.am-prep,.tm-btn.am-spk,.rb.ar{background:#F7F0E3!important;color:var(--navy)!important;border-color:var(--gold)!important}.student-action-panel,#studentActionPanel{border-color:var(--gold)!important;background:linear-gradient(135deg,#FFFDF8,#F4E8D2)!important}.log .li,.li{background:#FFFDF8!important;border:1px solid rgba(188,168,121,.3)!important}
+
+/* final sizing fixes for premium career card images */
+.dc.card-mode::before{display:none!important}.dc.card-mode{min-width:0}.doors-row .dc.card-mode .career-card-wrap{height:176px}.door-track .dc.card-mode .career-card-wrap{height:132px}.door-track .dc.card-mode .dc-open-btn{font-size:.62rem;padding:5px 6px}.doors-row{align-items:start}.door-track{align-items:start}.career-card-img{object-fit:contain!important}.doors-row .career-card-img,.door-track .career-card-img{max-height:100%}.story-panel .sp-icon{width:auto}.story-panel .sp-header{gap:18px}.sig-bar{background:linear-gradient(135deg,#071421,#132B46);border-top:1px solid rgba(201,154,59,.4)}.crown{font-size:0!important}.crown:after{content:'LEADER';font-size:.62rem;font-weight:900;color:var(--gold);border:1px solid var(--gold);border-radius:999px;padding:3px 8px;background:#071421}.tc-meta span{font-weight:800}.student-action-panel .pt,#studentActionPanel .pt{color:var(--teal)!important}
+@media(max-width:1200px){.doors-row .dc.card-mode .career-card-wrap{height:150px}.door-track .dc.card-mode .career-card-wrap{height:115px}}
+
+
+/* ===== TRUE PREMIUM LANDING VISUAL FIX — visible campus design ===== */
+#pin,
+.join-wrap{
+  min-height:100vh!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  padding:28px!important;
+  overflow-y:auto!important;
+  background-image:
+    linear-gradient(90deg, rgba(247,240,227,.60), rgba(247,240,227,.20) 30%, rgba(247,240,227,.20) 70%, rgba(247,240,227,.60)),
+    radial-gradient(circle at 50% 18%, rgba(255,255,255,.78), rgba(247,240,227,.20) 42%, rgba(11,26,43,.20) 100%),
+    url('assets/campus_teacher_bg.jpg')!important;
+  background-size:cover!important;
+  background-position:center!important;
+  background-repeat:no-repeat!important;
+}
+.join-wrap{
+  background-image:
+    linear-gradient(90deg, rgba(247,240,227,.55), rgba(247,240,227,.16) 30%, rgba(247,240,227,.16) 70%, rgba(247,240,227,.55)),
+    radial-gradient(circle at 50% 20%, rgba(255,255,255,.72), rgba(247,240,227,.18) 44%, rgba(11,26,43,.20) 100%),
+    url('assets/campus_student_bg.jpg')!important;
+}
+#pin:before,.join-wrap:before{
+  opacity:1!important;
+  background:
+    linear-gradient(180deg, rgba(255,251,242,.54) 0%, rgba(255,251,242,.12) 38%, rgba(11,26,43,.20) 100%),
+    radial-gradient(ellipse at 50% 100%, rgba(11,26,43,.46), transparent 42%)!important;
+}
+#pin:after,.join-wrap:after{
+  height:30%!important;
+  opacity:.22!important;
+  background:
+    repeating-linear-gradient(90deg,rgba(201,154,59,.35) 0 2px, transparent 2px 116px),
+    repeating-linear-gradient(0deg,rgba(11,26,43,.25) 0 2px, transparent 2px 92px)!important;
+}
+.landing-shell{
+  width:min(780px,92vw)!important;
+  gap:10px!important;
+  padding:0!important;
+  filter:drop-shadow(0 24px 38px rgba(11,26,43,.20));
+}
+.landing-logo{
+  font-size:clamp(3.2rem,6.6vw,6rem)!important;
+  letter-spacing:1px!important;
+  text-shadow:0 3px 0 rgba(255,255,255,.70),0 16px 28px rgba(11,26,43,.24)!important;
+}
+.landing-logo .gold{
+  color:#C99A3B!important;
+  text-shadow:0 2px 0 rgba(255,255,255,.75),0 12px 22px rgba(94,62,17,.25)!important;
+}
+.landing-ribbon{
+  padding:8px 34px!important;
+  border-radius:999px!important;
+  background:linear-gradient(135deg,#071421,#132B46)!important;
+  border:1.5px solid #C99A3B!important;
+  box-shadow:0 12px 22px rgba(11,26,43,.30)!important;
+}
+.landing-slogan{
+  background:rgba(255,251,242,.82);
+  border:1px solid rgba(201,154,59,.45);
+  border-radius:999px;
+  padding:8px 26px;
+  box-shadow:0 14px 24px rgba(11,26,43,.12);
+  margin:2px 0 6px!important;
+}
+.access-panel{
+  width:min(620px,90vw)!important;
+  padding:24px 30px!important;
+  border-radius:24px!important;
+  border:1.5px solid rgba(201,154,59,.66)!important;
+  background:linear-gradient(135deg,rgba(255,253,248,.96),rgba(247,240,227,.94))!important;
+  box-shadow:0 28px 70px rgba(11,26,43,.25), inset 0 1px 0 rgba(255,255,255,.9)!important;
+}
+.join-wrap .access-panel{width:min(780px,94vw)!important;}
+.access-panel h2{
+  font-size:clamp(1.45rem,2vw,1.9rem)!important;
+  margin-bottom:6px!important;
+}
+.pin-input,.code-in{
+  height:auto!important;
+  min-height:58px!important;
+  background:rgba(255,255,255,.72)!important;
+}
+.landing-btn,
+.join-wrap .btn.primary{
+  min-width:260px!important;
+  box-shadow:0 16px 34px rgba(11,26,43,.28), inset 0 1px 0 rgba(255,255,255,.15)!important;
+}
+.landing-signature{
+  margin-top:6px!important;
+  border-radius:15px!important;
+  padding:11px 36px!important;
+  background:linear-gradient(135deg,#071421,#132B46)!important;
+  border:1.5px solid rgba(201,154,59,.80)!important;
+}
+/* elegant side atmosphere: not toy-like */
+#pin .landing-shell:before,
+.join-wrap .landing-shell:before{
+  content:"";
+  position:fixed;
+  left:5vw;
+  bottom:7vh;
+  width:130px;
+  height:210px;
+  border:1.5px solid rgba(201,154,59,.55);
+  border-radius:70px 70px 12px 12px;
+  background:linear-gradient(180deg,rgba(7,20,33,.86),rgba(19,43,70,.88));
+  box-shadow:0 24px 50px rgba(11,26,43,.28), inset 0 0 0 7px rgba(247,240,227,.08);
+  opacity:.78;
+  z-index:-1;
+}
+#pin .landing-shell:after,
+.join-wrap .landing-shell:after{
+  content:"";
+  position:fixed;
+  right:6vw;
+  bottom:10vh;
+  width:170px;
+  height:170px;
+  border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#F6DA8E,#C99A3B 48%,#6F4C15 100%);
+  box-shadow:0 24px 45px rgba(11,26,43,.25), inset 0 0 0 10px rgba(255,255,255,.18), inset 0 0 0 14px rgba(11,26,43,.28);
+  opacity:.55;
+  z-index:-1;
+}
+@media(max-width:900px){
+  #pin .landing-shell:before,.join-wrap .landing-shell:before,#pin .landing-shell:after,.join-wrap .landing-shell:after{display:none!important}
+  .landing-logo{font-size:clamp(3rem,11vw,5rem)!important}
+}
+
+
+/* FINAL FIX: Student wallet visible in every post-join stage + teacher-started speaking timer */
+.team-wallet{margin:12px 14px 4px;padding:12px 14px;border-radius:18px;background:linear-gradient(135deg,#071421,#132B46);border:1px solid rgba(212,175,55,.55);box-shadow:0 12px 26px rgba(11,26,43,.16);color:#F8F1E4}
+.team-wallet-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.team-wallet-name{font-family:'Bebas Neue';font-size:1.55rem;letter-spacing:2px;line-height:1;color:#F8F1E4}
+.team-wallet-tag{font-size:.62rem;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:#D4AF37}
+.team-wallet-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.team-wallet-stat{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:9px;align-items:center;padding:10px;border-radius:14px;background:rgba(255,255,255,.08);border:1px solid rgba(212,175,55,.28)}
+.team-wallet-stat .sb-icon{grid-row:1/3}
+.team-wallet-num{font-family:'Bebas Neue';font-size:2.55rem;line-height:.86;color:#F5D26B;letter-spacing:1px}
+.team-wallet-lbl{font-size:.6rem;font-weight:900;letter-spacing:1.6px;text-transform:uppercase;color:rgba(248,241,228,.72)}
+.owned-doors-strip{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;min-height:0}
+.owned-door-tag{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:999px;
+  background:rgba(255,255,255,.1);border:1px solid rgba(212,175,55,.35);
+  font-size:.72rem;font-weight:700;color:#F5D26B}
+.owned-door-tag .od-icon{font-size:.95rem}
+.owned-door-none{font-size:.72rem;color:rgba(248,241,228,.4);font-style:italic}
+.global-speaking-timer{position:fixed;left:50%;top:14px;transform:translateX(-50%) translateY(-120%);z-index:1000;min-width:min(560px,92vw);padding:12px 18px;border-radius:20px;background:linear-gradient(135deg,#071421,#0E3D45);border:2px solid #D4AF37;box-shadow:0 18px 44px rgba(11,26,43,.34);color:#F8F1E4;display:flex;align-items:center;justify-content:space-between;gap:16px;transition:.25s ease}
+.global-speaking-timer.show{transform:translateX(-50%) translateY(0)}
+.gst-label{font-size:.72rem;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:#D4AF37}
+.gst-team{font-size:.82rem;font-weight:800;color:#EDE4D0;margin-top:2px}
+.gst-digits{font-family:'Bebas Neue';font-size:3.2rem;letter-spacing:2px;line-height:.9;color:#F8F1E4}
+.global-speaking-timer.warn .gst-digits{color:#F5B84B}.global-speaking-timer.danger .gst-digits{color:#F87171;animation:bl .5s infinite}
+@media(max-width:560px){.team-wallet{margin:10px 10px 4px;padding:10px}.team-wallet-name{font-size:1.25rem}.team-wallet-stats{gap:6px}.team-wallet-stat{padding:8px 6px;column-gap:6px}.team-wallet-num{font-size:2rem}.team-wallet-lbl{font-size:.5rem}.global-speaking-timer{top:8px;padding:10px 12px}.gst-digits{font-size:2.55rem}.gst-label{font-size:.62rem}}
+
+</style>
+</head>
+<body>
+<!-- FINAL FIX: visible timer when teacher starts Speaking Time -->
+<div class="global-speaking-timer" id="globalSpeakingTimer" aria-live="polite">
+  <div>
+    <div class="gst-label">Speaking Time</div>
+    <div class="gst-team" id="gstTeam">Class speaking timer</div>
+  </div>
+  <div class="gst-digits" id="gstDigits">00:45</div>
+</div>
+
+
+<!-- SPEAKING OVERLAY -->
+<div class="speak-overlay" id="speakOverlay">
+  <div class="speak-q" id="speakQ">Your question appears here.</div>
+  <div class="sand-wrap">
+    <svg class="sand-svg" viewBox="0 0 160 200" id="sandSvgBig">
+      <rect x="20" y="8" width="120" height="10" rx="5" fill="#E9D5FF"/>
+      <rect x="20" y="182" width="120" height="10" rx="5" fill="#E9D5FF"/>
+      <path d="M30,18 L130,18 L95,100 L130,182 L30,182 L65,100 Z" fill="#F5F3FF" stroke="#C4B5FD" stroke-width="2"/>
+      <clipPath id="sBigTop"><polygon points="30,18 130,18 95,100 65,100"/></clipPath>
+      <rect id="sBTop" x="30" y="18" width="100" height="82" fill="#7C3AED" opacity=".75" clip-path="url(#sBigTop)"/>
+      <clipPath id="sBigBot"><polygon points="65,100 95,100 130,182 30,182"/></clipPath>
+      <rect id="sBBot" x="30" y="182" width="100" height="0" fill="#7C3AED" opacity=".75" clip-path="url(#sBigBot)"/>
+      <circle cx="80" cy="100" r="4" fill="#C4B5FD"/>
+    </svg>
+    <div class="sand-digs" id="sandDigs">45</div>
+  </div>
+  <div class="speak-lbl">seconds — speak clearly</div>
+  <div class="speak-frame" id="dynamicLangFrame">
+    <div class="sf-title" id="langFrameTitle">Language Help</div>
+    <div id="langFrameItems"></div>
+  </div>
+  <button class="btn" onclick="stopSpeaking()" style="background:white;border-color:var(--border)">Done Speaking ✓</button>
+</div>
+
+<!-- JOIN -->
+<div class="screen active" id="joinScreen">
+  <div class="join-wrap">
+    <div class="landing-shell">
+      <div class="landing-logo">CAREER <span class="gold">CITY</span></div>
+      <div class="landing-ribbon">Join the Auction</div>
+      <div class="landing-slogan">SPEAK <span class="dot">•</span> THINK <span class="dot">•</span> WIN</div>
+      <div class="landing-note">Choose your team. Enter the city. Speak to win.</div>
+      <div id="syncStatus" style="font-size:.65rem;color:#888;letter-spacing:1px">Connecting…</div>
+      <div class="access-panel" style="width:min(760px,94vw)">
+        <h2>Choose Your Team</h2>
+        <div id="noRoomWarning" style="display:none;padding:8px 12px;background:#FEF3C7;border-radius:8px;border:1px solid #FCD34D;color:#92400E;font-size:.78rem;font-weight:700;margin-bottom:12px">
+          ⚠ Scan the QR code on the classroom screen to join
+        </div>
+        <input type="hidden" id="codeIn">
+        <div class="team-btns" id="teamBtns"></div>
+        <button class="landing-btn" onclick="joinGame()" style="width:min(360px,100%);margin-top:12px">Enter the City →</button>
+      </div>
+      <div class="landing-signature"><strong>Nashwa Soliman</strong><span>EFL Educator &amp; Instructional Game Designer</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- WAIT -->
+<div class="screen" id="waitScreen">
+  <div class="status-bar">
+    <div class="sb-game">THE DOOR <span>AUCTION</span></div>
+    <div class="sb-right">
+      <div style="width:10px;height:10px;border-radius:50%" id="waitDot"></div>
+      <div style="font-size:.88rem;font-weight:800" id="waitTeamName">Team</div>
+    </div>
+  </div>
+<!-- FINAL WALLET WAIT -->
+  <div class="team-wallet">
+    <div class="team-wallet-head"><div class="team-wallet-name walletTeamName">Your Team</div><div class="team-wallet-tag">Team Wallet</div></div>
+    <div class="team-wallet-stats">
+      <div class="team-wallet-stat"><div class="sb-icon ico-coin"></div><div class="team-wallet-num walletCoins">12</div><div class="team-wallet-lbl">Coins</div></div>
+      <div class="team-wallet-stat"><div class="sb-icon ico-door"></div><div class="team-wallet-num walletDoors">0</div><div class="team-wallet-lbl">Doors</div></div>
+      <div class="team-wallet-stat"><div class="sb-icon ico-star">★</div><div class="team-wallet-num walletPts">0</div><div class="team-wallet-lbl">Points</div></div>
+    </div>
+    <div class="owned-doors-strip walletOwnedDoors">
+      <span class="owned-door-none">No doors bought yet</span>
+    </div>
+  </div>
+
+  <div class="wait-wrap">
+    <div class="wait-pulse">🚪</div>
+    <div class="wait-team" id="waitTeam" style="color:#7C3AED">Team Name</div>
+    <!-- CLAIM BUTTON — shows when a door is opened, 10s delay -->
+    <div id="claimWrap" style="display:none;margin-top:18px;text-align:center">
+      <div id="claimCountdown" style="font-size:.78rem;font-weight:800;letter-spacing:2px;color:var(--muted);margin-bottom:8px;text-transform:uppercase"></div>
+      <button id="claimBtn" onclick="claimDoor()" style="display:none;background:linear-gradient(135deg,#065F46,#0E6B72);color:white;border:none;border-radius:14px;padding:14px 36px;font-size:1.1rem;font-weight:900;cursor:pointer;box-shadow:0 10px 28px rgba(6,95,70,.28);letter-spacing:1px;animation:pulse 1s infinite">🚪 CLAIM THIS DOOR</button>
+      <div id="claimTaken" style="display:none;padding:12px 20px;background:#FEE2E2;border-radius:12px;color:#DC2626;font-weight:800;font-size:.88rem">Another team claimed this door</div>
+      <div id="claimMine" style="display:none;padding:12px 20px;background:#ECFDF5;border-radius:12px;color:#065F46;font-weight:800;font-size:.88rem;text-align:center">
+        ✓ Your team claimed it! Get ready to speak.
+        <br>
+        <button onclick="showScreen('challengeScreen')" style="margin-top:10px;background:linear-gradient(135deg,#065F46,#0E6B72);color:white;border:none;border-radius:10px;padding:10px 24px;font-size:.9rem;font-weight:900;cursor:pointer;width:100%">
+          📋 See the Challenge →
+        </button>
+      </div>
+    </div>
+    <div class="wait-text">Waiting for teacher to open a door.<br><span style="font-size:.85rem;color:var(--muted)">Your questions will appear automatically.</span></div>
+  </div>
+</div>
+
+<!-- PUBLIC CHALLENGE SCREEN -->
+<div class="screen speak-overlay" id="challengeScreen" style="flex-direction:column;align-items:center;justify-content:center;padding:20px;gap:14px;overflow-y:auto">
+  <div style="font-size:.7rem;font-weight:900;letter-spacing:4px;color:rgba(255,255,255,.55);text-transform:uppercase">Public Challenge — 45 seconds</div>
+  <div id="challengeTeamName" style="font-family:'Bebas Neue';font-size:1.8rem;letter-spacing:3px;color:var(--gold,#C99A3B)"></div>
+
+  <!-- The challenge question -->
+  <div class="speak-q" style="text-align:center;padding:18px 20px;max-width:480px;width:100%">
+    <div id="challengeQuestion" style="font-size:1.15rem;font-weight:800;line-height:1.6;color:var(--navy,#0B1A2B)"></div>
+  </div>
+
+  <!-- Points breakdown — what earns what -->
+  <div class="speak-frame" style="max-width:460px;width:100%;text-align:left">
+    <div class="sf-title" style="margin-bottom:8px">How to earn points:</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:rgba(255,255,255,.12);border-radius:8px">
+        <span style="font-size:.88rem;color:rgba(255,255,255,.9)">Give at least TWO reasons</span>
+        <span style="font-family:'Bebas Neue';font-size:1.2rem;color:#6EE7B7">+3</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:rgba(255,255,255,.08);border-radius:8px">
+        <span style="font-size:.88rem;color:rgba(255,255,255,.9)">Give a THIRD reason</span>
+        <span style="font-family:'Bebas Neue';font-size:1.2rem;color:#FCD34D">+1 bonus</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:rgba(255,255,255,.08);border-radius:8px">
+        <span style="font-size:.88rem;color:rgba(255,255,255,.9)">Use a connector word</span>
+        <span style="font-family:'Bebas Neue';font-size:1.2rem;color:#FCD34D">+1 bonus</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:rgba(255,255,255,.08);border-radius:8px">
+        <span style="font-size:.88rem;color:rgba(255,255,255,.9)">Use future grammar</span>
+        <span style="font-family:'Bebas Neue';font-size:1.2rem;color:#FCD34D">+1 bonus</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Language help — minimal -->
+  <div class="speak-frame" style="max-width:460px;width:100%;text-align:left">
+    <div class="sf-title">Connectors (+1): <span style="font-weight:400;color:rgba(255,255,255,.8)">Firstly… / Also… / On top of that… / Most importantly…</span></div>
+    <div class="sf-title" style="margin-top:6px">Future grammar (+1): <span style="font-weight:400;color:rgba(255,255,255,.8)">I am going to… / I plan to… / I would like to…</span></div>
+  </div>
+
+  <button onclick="showScreen('waitScreen')" style="background:rgba(255,255,255,.15);color:white;border:1px solid rgba(255,255,255,.3);border-radius:10px;padding:10px 24px;font-weight:700;cursor:pointer;font-size:.85rem">← Back</button>
+</div>
+
+<!-- RESCUE SCREEN -->
+<div class="screen speak-overlay" id="rescueScreen" style="flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:16px">
+  <div style="font-size:.7rem;font-weight:900;letter-spacing:4px;color:#FCD34D;text-transform:uppercase">⏱ Rescue Chance — 10 seconds</div>
+  <div class="speak-q" style="text-align:center;padding:20px 24px;max-width:480px;width:100%">
+    <div style="font-size:.65rem;font-weight:900;letter-spacing:2px;color:#D97706;margin-bottom:8px;text-transform:uppercase">Add one more reason</div>
+    <div id="rescueQuestion" style="font-size:1.1rem;font-weight:800;line-height:1.5;color:var(--navy,#0B1A2B)"></div>
+  </div>
+  <div class="speak-frame" style="max-width:460px;width:100%">
+    <div class="sf-title" style="color:#D97706">One more reason:</div>
+    <div class="sf-item"><span>Also…</span> because…</div>
+    <div class="sf-item"><span>Another reason is…</span></div>
+    <div class="sf-item"><span>On top of that…</span></div>
+  </div>
+  <button onclick="showScreen('waitScreen')" style="background:rgba(255,255,255,.15);color:white;border:1px solid rgba(255,255,255,.3);border-radius:10px;padding:10px 24px;font-weight:700;cursor:pointer;font-size:.85rem">← Back</button>
+</div>
+
+<!-- EXPLORE (Round 1) -->
+<div class="screen" id="exploreScreen">
+  <div class="status-bar">
+    <div class="sb-game">THE DOOR <span>AUCTION</span></div>
+    <div class="sb-right">
+      <span style="font-size:.8rem;font-weight:700;color:rgba(255,255,255,.7)">Round 1 — Explore</span>
+    </div>
+  </div>
+<!-- FINAL WALLET EXPLORE -->
+  <div class="team-wallet">
+    <div class="team-wallet-head"><div class="team-wallet-name walletTeamName">Your Team</div><div class="team-wallet-tag">Team Wallet</div></div>
+    <div class="team-wallet-stats">
+      <div class="team-wallet-stat"><div class="sb-icon ico-coin"></div><div class="team-wallet-num walletCoins">12</div><div class="team-wallet-lbl">Coins</div></div>
+      <div class="team-wallet-stat"><div class="sb-icon ico-door"></div><div class="team-wallet-num walletDoors">0</div><div class="team-wallet-lbl">Doors</div></div>
+      <div class="team-wallet-stat"><div class="sb-icon ico-star">★</div><div class="team-wallet-num walletPts">0</div><div class="team-wallet-lbl">Points</div></div>
+    </div>
+    <div class="owned-doors-strip walletOwnedDoors">
+      <span class="owned-door-none">No doors bought yet</span>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="pt" style="padding-top:4px">Read all 8 doors — choose which ones you want</div>
+    <div class="explore-grid" id="exploreGrid"></div>
+  </div>
+</div>
+
+<!-- ACTIVE GAME -->
+<div class="screen" id="activeScreen">
+  <div class="status-bar">
+    <div style="display:flex;align-items:center;gap:8px">
+      <div style="width:10px;height:10px;border-radius:50%" id="activeDot"></div>
+      <div style="font-size:.88rem;font-weight:800" id="activeTeamName">Team</div>
+    </div>
+    <div class="sb-right">
+      <div class="sb-stat stat-coins"><div class="sb-icon ico-coin" aria-hidden="true"></div><div class="sb-val" id="stCoins" style="color:#FCD34D">12</div><div class="sb-lbl">Coins</div></div>
+      <div class="sb-stat stat-doors"><div class="sb-icon ico-door" aria-hidden="true"></div><div class="sb-val" id="stDoors" style="color:#E9D5A1">0</div><div class="sb-lbl">Doors</div></div>
+      <div class="sb-stat stat-points"><div class="sb-icon ico-star" aria-hidden="true">★</div><div class="sb-val" id="stPts" style="color:#D4AF37">0</div><div class="sb-lbl">Points</div></div>
+    </div>
+  </div>
+  <div class="step-ind" id="stepInd">
+    <div class="si-item done"><div class="si-num">✓</div><span>Joined</span></div>
+    <span class="si-arr">›</span>
+    <div class="si-item active"><div class="si-num">2</div><span>Wait</span></div>
+    <span class="si-arr">›</span>
+    <div class="si-item"><div class="si-num">3</div><span>Choose Question</span></div>
+    <span class="si-arr">›</span>
+    <div class="si-item"><div class="si-num">4</div><span>Speak</span></div>
+  </div>
+  <div class="body">
+    <!-- HC NOTIF -->
+    <div class="hc-notif" id="hcNotif">
+      <div class="hcn-lbl">⚠ Hidden Cost Revealed — Your Team Owns This Door</div>
+      <div class="hcn-door" id="hcnDoor"></div>
+      <div class="hcn-cost" id="hcnCost"></div>
+      <div class="hcn-frames">
+        <div class="hcn-f" onclick="startSpeakingWith('I still think it was worth it because…')"><span>I still think it was worth it because…</span> tap to speak</div>
+        <div class="hcn-f" onclick="startSpeakingWith('Now I am not sure because…')"><span>Now I am not sure because…</span> tap to speak</div>
+        <div class="hcn-f" onclick="startSpeakingWith('The cost I am most worried about is…')"><span>The cost I am most worried about is…</span> tap to speak</div>
+      </div>
+    </div>
+    <!-- PREP TIMER -->
+    <div class="prep-box" id="prepBox">
+      <div class="prep-lbl">Step 2 — Prepare Your Answer</div>
+      <div class="prep-num" id="prepNum">2:00</div>
+      <div class="prep-sub">Read the question below. Think. Get ready to speak.</div>
+    </div>
+    <!-- DOOR SELECT -->
+    <div class="panel" id="doorSelectPanel">
+      <div class="pt">Step 3 — Choose a Door to Answer</div>
+      <div class="door-grid" id="doorGrid"></div>
+    </div>
+    <!-- DOOR DETAIL -->
+    <div id="doorDetailWrap" style="display:none">
+      <div class="detail-header" style="margin-bottom:12px">
+        <div style="font-size:1rem;font-weight:800" id="detailTitle"></div>
+        <button class="btn sm" onclick="clearDetail()">← All Doors</button>
+      </div>
+      <div class="detail-story">
+        <div class="ds-title" id="detailName"></div>
+        <div class="ds-text" id="detailStory"></div>
+      </div>
+      <!-- PREP QUESTIONS — visible during 2-minute discussion -->
+      <div id="prepSection" style="display:none;margin-bottom:12px;padding:12px 14px;background:#F0FDF4;border-radius:12px;border:1.5px solid #6EE7B7">
+        <div style="font-size:.6rem;font-weight:900;letter-spacing:2px;color:#065F46;text-transform:uppercase;margin-bottom:10px">Step 1 — Discuss with your team (2 min)</div>
+        <div style="font-size:.68rem;font-weight:800;color:#065F46;margin-bottom:6px">Answer these together:</div>
+        <div style="display:flex;flex-direction:column;gap:5px" id="prepQ1List"></div>
+        <div style="border-top:1px solid #BBF7D0;margin-top:10px;padding-top:10px">
+          <div style="font-size:.68rem;font-weight:800;color:#065F46;margin-bottom:6px">Now discuss:</div>
+          <div id="prepOpinionQ" style="font-size:.9rem;font-weight:700;color:#0B1A2B;line-height:1.5;padding:8px 10px;background:white;border-radius:8px;border:1px solid #6EE7B7"></div>
+          <div style="margin-top:8px;font-size:.68rem;font-weight:800;color:#065F46;margin-bottom:4px">Language frames:</div>
+          <div id="prepFramesList" style="display:flex;flex-direction:column;gap:3px"></div>
+        </div>
+      </div>
+      <div class="pt">Step 2 — Choose Your Question</div>
+      <div class="q-list" id="qList"></div>
+      <div id="speakBtnWrap" style="display:none">
+        <button class="btn primary full" onclick="startSpeaking()" id="speakBtn">
+          Step 3 — Start My Speaking Turn
+        </button>
+      </div>
+      <!-- BUY BUTTON — unlocks when all spoke -->
+      <div id="buyBtnWrap" style="display:none;margin-top:10px">
+        <button id="buyBtn" onclick="buyThisDoor()" style="width:100%;padding:14px;border-radius:12px;
+          border:none;font-family:Space Grotesk,sans-serif;font-size:.95rem;font-weight:800;cursor:pointer">
+          Buy This Door
+        </button>
+      </div>
+    </div>
+    <!-- LANGUAGE FRAMES -->
+    <div class="panel">
+      <div class="pt">Language Help</div>
+      <div class="lf-grid" id="bottomLangFrames">
+        <div class="lf"><strong>I think…</strong> because…</div>
+        <div class="lf"><strong>In my opinion…</strong> because…</div>
+        <div class="lf"><strong>I agree / disagree</strong> because…</div>
+        <div class="lf"><strong>Yes / No, I think…</strong> because…</div>
+        <div class="lf"><strong>I am going to…</strong> because…</div>
+        <div class="lf"><strong>I plan to…</strong> and I hope to…</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DONE -->
+<div class="screen" id="doneScreen">
+  <div class="status-bar"><div class="sb-game">THE DOOR <span>AUCTION</span></div></div>
+  <!-- FINAL WALLET DONE -->
+  <div class="team-wallet">
+    <div class="team-wallet-head"><div class="team-wallet-name walletTeamName">Your Team</div><div class="team-wallet-tag">Team Wallet</div></div>
+    <div class="team-wallet-stats">
+      <div class="team-wallet-stat"><div class="sb-icon ico-coin"></div><div class="team-wallet-num walletCoins">12</div><div class="team-wallet-lbl">Coins</div></div>
+      <div class="team-wallet-stat"><div class="sb-icon ico-door"></div><div class="team-wallet-num walletDoors">0</div><div class="team-wallet-lbl">Doors</div></div>
+      <div class="team-wallet-stat"><div class="sb-icon ico-star">★</div><div class="team-wallet-num walletPts">0</div><div class="team-wallet-lbl">Points</div></div>
+    </div>
+    <div class="owned-doors-strip walletOwnedDoors">
+      <span class="owned-door-none">No doors bought yet</span>
+    </div>
+  </div>
+
+  <div class="done-wrap">
+    <div class="done-icon">✅</div>
+    <div class="done-title">Well Done!</div>
+    <div class="done-text">Your speaking turn is complete.<br>Pass the iPad to the next student.</div>
+    <button class="next-btn" onclick="nextStudent()">Next Student →</button>
+  </div>
+</div>
+
+<script>
+const DOORS=[
+  {id:1,name:'Content Creator',short:'Creator',price:4,color:'#FF6B00',icon:'🎬',
+   story:'This person makes videos every day. They have 200,000 followers. Companies pay them to show their products. They earn money from home.',
+   q:[['start','Do you watch online videos every day? What topics?'],['start','Would you like to have 200,000 followers? Why?'],['build','Is making videos a real job? Why do you think so?'],['build','Would you share your personal life online? Why or why not?'],['challenge','I want this door because I am going to _____ and I plan to _____.']]}
+ ,{id:2,name:'Brand Founder',short:'Founder',price:5,color:'#E91E8C',icon:'📦',
+   story:'This person started a product business at home. They send 500 orders every month. They have no boss. They built everything alone.',
+   q:[['start','Do you buy products online? What do you buy?'],['start','Would you like to start your own business? What would you sell?'],['build','Is it better to have your own business or work for a company? Why?'],['build','Would you work very long hours for your own business? Why?'],['challenge','I want this door because I plan to _____ and I hope to _____.']]}
+ ,{id:3,name:'The Freelancer',short:'Freelance',price:3,color:'#00897B',icon:'💻',
+   story:'This person works for 5 different companies online. They earn good money every month. They have no office and no boss. They work from anywhere.',
+   q:[['start','Do you like working with rules and a fixed schedule? Why?'],['start','Would you like to work from home? Why?'],['build','Is freedom more important than job security? Why?'],['build','What would you do if you had no income for one month?'],['challenge','I want this door because I will _____ and I intend to _____.']]}
+ ,{id:4,name:'The Podcaster',short:'Podcaster',price:3,color:'#7C3AED',icon:'🎙️',
+   story:'This person has a podcast about real problems young people have. 50,000 people listen every week. They speak at events and conferences.',
+   q:[['start','Do you listen to podcasts? What topics do you like?'],['start','What problem would you talk about in a podcast?'],['build','Is it important to have a public voice today? Why?'],['build','Would you share your opinions publicly? Why or why not?'],['challenge','I want this door because I am going to _____ and I would like to _____.']]}
+ ,{id:5,name:'Corporate Pro',short:'Corporate',price:3,color:'#1565C0',icon:'💼',
+   story:'This person works for a big international company. They have a good title and a stable salary. Their family is very proud of them.',
+   q:[['start','Would you like to work for a big company? Why?'],['start','Is a good salary important to you? Why?'],['build','Is it better to have a stable job or your own business? Why?'],['build','Is family approval important when you choose a career? Why?'],['challenge','I want this door because I plan to _____ and I hope to _____.']]}
+ ,{id:6,name:'The AI Expert',short:'AI Expert',price:4,color:'#0277BD',icon:'🤖',
+   story:'This person learned AI tools for 6 months. Now they work for clients in different countries. They earn in dollars. They never leave home.',
+   q:[['start','Do you use any AI tools? Name one.'],['start','Would you like to work from home for international clients? Why?'],['build','Is learning AI important for young people today? Why?'],['build','Would you feel lonely working alone at home every day?'],['challenge','I want this door because I intend to _____ and I am going to _____.']]}
+ ,{id:7,name:'Wellness Coach',short:'Wellness',price:3,color:'#2E7D32',icon:'💪',
+   story:'This person teaches fitness and healthy habits online. They have 80,000 followers. Companies send them free products. They love their work.',
+   q:[['start','Do you exercise regularly? What do you do?'],['start','Would you like to help other people get healthy? How?'],['build','Is health more important than money? Why?'],['build','Would you be comfortable if your body was your brand? Why?'],['challenge','I want this door because I hope to _____ and I plan to _____.']]}
+ ,{id:8,name:'The Creative',short:'Creative',price:2,color:'#F57F17',icon:'🎨',
+   story:'This person styles people and creates visual designs for brands. They charge high prices per session. They are always fully booked.',
+   q:[['start','Do you enjoy art, design, or styling? What do you like?'],['start','Would you like a job where every day is different? Why?'],['build','Is creative work a serious career? Why do you think so?'],['build','How would you respond if people did not respect your job?'],['challenge','I want this door because I would like to _____ and I intend to _____.']]}
+];
+const TCOLS=['#17324D','#6D2F1D','#23412E','#43235F','#9A6A16'];
+const TNAMES=['The Starters','The Builders','The Makers','The Risers','The Changers'];
+const CH='doorauction2025';
+
+
+/* ── SUPABASE REALTIME SYNC ── */
+const SUPABASE_URL='https://tggontgfrddojbbggavl.supabase.co';
+const SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnZ29udGdmcmRkb2piYmdnYXZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMDExMzAsImV4cCI6MjA5NTU3NzEzMH0.SsyIIDRLsoas9kAK4biBq5H44-78iTcdjs3wHjXpxOQ';
+const SYNC_CH='doorauction2025';
+let _ws=null,_wsRef=1,_onState=null,_connected=false,_wsQueue=[],_pushTimer=null,_lastState=null;
+function syncInit(onState){
+  _onState=onState;
+  try{const l=JSON.parse(localStorage.getItem(SYNC_CH)||'null');if(l&&onState)onState(l);}catch(e){}
+  _connect();
+}
+function syncPush(state){
+  _lastState=state;
+  try{localStorage.setItem(SYNC_CH,JSON.stringify(state));}catch(e){}
+  if(_pushTimer)clearTimeout(_pushTimer);
+  _pushTimer=setTimeout(()=>{
+    _wsSend({topic:`realtime:${SYNC_CH}`,event:'broadcast',
+      payload:{type:'broadcast',event:'state',payload:{state}},ref:String(_wsRef++)});
+  },250);
+}
+function _connect(){
+  const url=SUPABASE_URL.replace('https://','wss://')+`/realtime/v1/websocket?apikey=${SUPABASE_ANON}&vsn=1.0.0`;
+  try{_ws=new WebSocket(url);}catch(e){setTimeout(_connect,3000);return;}
+  _ws.onopen=()=>{
+    _connected=true;
+    _wsSend({topic:`realtime:${SYNC_CH}`,event:'phx_join',
+      payload:{config:{broadcast:{self:false}}},ref:String(_wsRef++)});
+    _wsQueue.forEach(m=>_ws.send(JSON.stringify(m)));_wsQueue=[];
+    // Student announces itself — teacher will push state back
+    setTimeout(()=>{
+      _wsSend({topic:`realtime:${SYNC_CH}`,event:'broadcast',
+        payload:{type:'broadcast',event:'hello',payload:{role:'student'}},ref:String(_wsRef++)});
+    },400);
+    const ss=document.getElementById('syncStatus');
+    if(ss){ss.textContent='✓ Connected';ss.style.color='#2E7D32';}
+  };
+  _ws.onmessage=(e)=>{
+    try{
+      const msg=JSON.parse(e.data);
+      if(msg.event==='broadcast'&&msg.payload){
+        const ev=msg.payload.event,pl=msg.payload.payload||{};
+        if(ev==='state'&&pl.state&&_onState){
+          try{localStorage.setItem(SYNC_CH,JSON.stringify(pl.state));}catch(err){}
+          _onState(pl.state);
+        }
+        // Only teacher responds to request_state
+      }
+    }catch(err){}
+  };
+  _ws.onclose=()=>{
+    _connected=false;
+    const ss=document.getElementById('syncStatus');
+    if(ss){ss.textContent='Reconnecting…';ss.style.color='#D97706';}
+    setTimeout(_connect,2000);
+  };
+  _ws.onerror=()=>{};
+}
+function _wsSend(msg){
+  if(_connected&&_ws&&_ws.readyState===WebSocket.OPEN)_ws.send(JSON.stringify(msg));
+  else _wsQueue.push(msg);
+}
+/* ── END SYNC ── */
+
+let me={team:0,selectedQ:null,prevDoor:null,prevCosts:[],prevRound:-1,
+  speakInt:null,speakLeft:45,prepInt:null,prevCoins:12};
+
+const params=new URLSearchParams(window.location.search);
+const _urlRoom=params.get('room');
+if(_urlRoom){
+  document.getElementById('codeIn').value=_urlRoom;
+} else {
+  // No room in URL — show warning, student must scan QR
+  const w=document.getElementById('noRoomWarning');
+  if(w)w.style.display='block';
+}
+
+function buildTeamBtns(){
+  document.getElementById('teamBtns').innerHTML=TNAMES.map((n,i)=>
+    `<button class="tb ${i===0?'sel':''}" style="${i===0?'--tc:'+TCOLS[0]+';border-color:'+TCOLS[0]:''}"
+      id="tb${i}" onclick="selectTeam(${i},this)">${n}</button>`).join('');
+  // Auto-join from URL if room param present
+  const urlRoom=new URLSearchParams(window.location.search).get('room');
+  if(urlRoom){
+    // Pre-select first team and auto-proceed to team selection (no PIN needed)
+    setTimeout(()=>{
+      // Just show the page normally — room is available
+      document.title='Career City — Join';
+    },100);
+  }
+}
+
+function selectTeam(i,btn){
+  me.team=i;
+  document.querySelectorAll('.tb').forEach(b=>{b.classList.remove('sel');b.style.removeProperty('--tc');b.style.borderColor='';});
+  btn.classList.add('sel');
+  btn.style.setProperty('--tc',TCOLS[i]);
+  btn.style.borderColor=TCOLS[i];
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function joinGame(){
+  // Read room from URL
+  const urlRoom=new URLSearchParams(window.location.search).get('room');
+  if(!urlRoom){
+    const w=document.getElementById('noRoomWarning');
+    if(w)w.style.display='block';
+    return; // Block join — must scan QR
+  }
+  me.room=urlRoom;
+  me.prevDoor=null;me.prevCosts=[];me.prevRound=-1;
+  const col=TCOLS[me.team];
+  ['waitDot','activeDot'].forEach(id=>{const el=document.getElementById(id);if(el){el.style.background=col;el.style.boxShadow='0 0 8px '+col;}});
+  ['waitTeamName','activeTeamName'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=TNAMES[me.team];});
+  document.getElementById('waitTeam').textContent=TNAMES[me.team];
+  document.getElementById('waitTeam').style.color=col;
+  showScreen('waitScreen');
+  startPolling();
+  buildExploreGrid();
+}
+
+function startPolling(){
+  // Cross-device sync
+  syncInit((state)=>{if(state)processState(state);});
+  // Same-device fallback
+  setInterval(()=>{
+    try{const raw=localStorage.getItem(CH);if(!raw)return;const G=JSON.parse(raw);if(G)processState(G);}catch(e){}
+  },1000);
+}
+
+
+function updateAllWallets(t){
+  document.querySelectorAll('.walletTeamName').forEach(el=>el.textContent=TNAMES[me.team]);
+  document.querySelectorAll('.walletCoins').forEach(el=>el.textContent=t.coins);
+  document.querySelectorAll('.walletDoors').forEach(el=>el.textContent=t.doors.length);
+  document.querySelectorAll('.walletPts').forEach(el=>el.textContent=t.score);
+  const c=TCOLS[me.team];
+  document.querySelectorAll('.team-wallet').forEach(el=>el.style.borderColor=c);
+  // Render owned doors
+  const doorsHtml=t.doors.length===0
+    ?'<span class="owned-door-none">No doors bought yet</span>'
+    :t.doors.map(di=>{
+        const d=DOORS[di];if(!d)return'';
+        return`<span class="owned-door-tag"><span class="od-icon">${d.icon}</span>${d.name}</span>`;
+      }).join('');
+  document.querySelectorAll('.walletOwnedDoors').forEach(el=>el.innerHTML=doorsHtml);
+}
+
+// Update language frames based on selected question level
+function updateLangFrames(level){
+  const FRAMES={
+    start:[
+      ['Yes, I do. I think…','because…'],
+      ['No, I don't. I think…','because…'],
+      ['I like…','for example…'],
+      ['I don't like…','but maybe…'],
+      ['I think… is important','because…']
+    ],
+    build:[
+      ['I think… is better','because…'],
+      ['I prefer…','because… is important to me'],
+      ['In my opinion… is more important than…','because…'],
+      ['I think it is good because…','but it is also difficult because…'],
+      ['Yes / No, I would…','because…']
+    ],
+    challenge:[
+      ['First of all…','/ Firstly…'],
+      ['Also…','/ In addition…'],
+      ['On top of that…',''],
+      ['Most importantly…',''],
+      ['I am going to… / I plan to… / I would like to…','because…']
+    ]
+  };
+  const frames=FRAMES[level]||FRAMES.start;
+  const title=level==='start'?'+1 Question — Use These Frames':
+              level==='build'?'+2 Question — Use These Frames':
+              '+3 Challenge — Connectors &amp; Future Grammar';
+  // Update speaking overlay frames
+  const titleEl=document.getElementById('langFrameTitle');
+  const itemsEl=document.getElementById('langFrameItems');
+  if(titleEl)titleEl.textContent=title;
+  if(itemsEl)itemsEl.innerHTML=frames.map(([s,c])=>
+    `<div class="sf-item"><span>${s}</span> ${c}</div>`).join('');
+  // Update bottom panel
+  const bottom=document.getElementById('bottomLangFrames');
+  if(bottom)bottom.innerHTML=frames.map(([s,c])=>
+    `<div class="lf"><strong>${s}</strong> ${c}</div>`).join('');
+}
+
+function updateTeacherSpeakingTimer(G){
+  const bar=document.getElementById('globalSpeakingTimer');
+  const digits=document.getElementById('gstDigits');
+  const team=document.getElementById('gstTeam');
+  if(!bar||!digits)return;
+  const teacherSpeaking=(G.timerMode==='s30'||G.timerMode==='s45')&&G.timerRunning&&G.timerLeft>0;
+  const studentSpeaking=G.speakingTimer&&G.speakingTimer.running&&G.speakingTimer.left>0;
+  if(!teacherSpeaking||studentSpeaking){bar.className='global-speaking-timer';return;}
+  const s=G.timerLeft;
+  digits.textContent=`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+  if(team)team.textContent='Teacher-controlled speaking timer';
+  bar.className='global-speaking-timer show'+(s<=5?' danger':s<=15?' warn':'');
+}
+
+
+function obeyTeacherTimerOverride(G){
+  const overlay=document.getElementById('speakOverlay');
+  const st=G&&G.speakingTimer;
+  if(!st)return;
+  // If the teacher stopped/paused/reset a student-started timer, stop the local interval too.
+  if(me.speakInt && !st.running){
+    clearInterval(me.speakInt);me.speakInt=null;
+    me.speakLeft=Math.max(0,st.left||0);
+    updateSpeakDisplay();updateSandBig((st.base||45)>0?me.speakLeft/(st.base||45):0);
+    if(me.speakLeft<=0 && overlay)overlay.classList.remove('active');
+  }
+}
+
+let _claimTimer=null;
+let _claimCountdown=0;
+
+function updateClaimStatus(G){
+  const wrap=document.getElementById('claimWrap');
+  const btn=document.getElementById('claimBtn');
+  const taken=document.getElementById('claimTaken');
+  const mine=document.getElementById('claimMine');
+  const countdown=document.getElementById('claimCountdown');
+  if(!wrap)return;
+
+  if(G.activeDoor===null||G.activeDoor===undefined){
+    wrap.style.display='none';
+    if(_claimTimer){clearInterval(_claimTimer);_claimTimer=null;}
+    return;
+  }
+
+  wrap.style.display='block';
+
+  if(G.claimedBy===me.team){
+    // My team claimed it
+    if(btn)btn.style.display='none';
+    if(taken)taken.style.display='none';
+    if(mine)mine.style.display='block';
+    if(countdown)countdown.textContent='';
+    if(_claimTimer){clearInterval(_claimTimer);_claimTimer=null;}
+    // Show challenge screen option
+    showChallengeInfo(G);
+  } else if(G.claimedBy!==null&&G.claimedBy!==undefined){
+    // Another team claimed it
+    if(btn)btn.style.display='none';
+    if(taken)taken.style.display='block';
+    if(mine)mine.style.display='none';
+    if(countdown)countdown.textContent='';
+    if(_claimTimer){clearInterval(_claimTimer);_claimTimer=null;}
+  } else {
+    // Unclaimed — start countdown if not already running
+    if(taken)taken.style.display='none';
+    if(mine)mine.style.display='none';
+    if(!_claimTimer&&btn&&btn.style.display!=='block'){
+      // Start 10-second delay
+      _claimCountdown=10;
+      if(countdown)countdown.textContent=`Door opens in ${_claimCountdown}s…`;
+      if(btn)btn.style.display='none';
+      _claimTimer=setInterval(()=>{
+        _claimCountdown--;
+        if(_claimCountdown>0){
+          if(countdown)countdown.textContent=`Claim in ${_claimCountdown}s…`;
+        } else {
+          clearInterval(_claimTimer);_claimTimer=null;
+          if(btn){btn.style.display='block';}
+          if(countdown)countdown.textContent='';
+        }
+      },1000);
+    }
+  }
+}
+
+function claimDoor(){
+  const raw=localStorage.getItem(CH);if(!raw)return;
+  let G;try{G=JSON.parse(raw);}catch(e){return;}
+  if(G.claimedBy!==null&&G.claimedBy!==undefined)return; // already claimed
+  if(G.activeDoor===null||G.activeDoor===undefined)return;
+  G.claimedBy=me.team;
+  // Save locally and broadcast
+  try{localStorage.setItem(CH,JSON.stringify(G));}catch(e){}
+  // Broadcast via Supabase
+  syncPush(G);
+  // Update local UI
+  updateClaimStatus(G);
+  const btn=document.getElementById('claimBtn');
+  if(btn)btn.style.display='none';
+  const mine=document.getElementById('claimMine');
+  if(mine)mine.style.display='block';
+}
+
+function showChallengeInfo(G){
+  if(G.activeDoor===null||G.activeDoor===undefined)return;
+  const raw=localStorage.getItem(CH);if(!raw)return;
+  let state;try{state=JSON.parse(raw);}catch(e){return;}
+  if(state.activeDoor===null||state.activeDoor===undefined)return;
+  if(typeof DOORS==='undefined')return;
+  const d=DOORS[state.activeDoor];if(!d)return;
+  const cq=document.getElementById('challengeQuestion');
+  const rq=document.getElementById('rescueQuestion');
+  const cn=document.getElementById('challengeTeamName');
+  // Use the agreed challenge format
+  const challengeText=`Your team wants to buy the ${d.name} door. Give at least two different reasons why this is a smart choice for your future.`;
+  if(cq)cq.textContent=challengeText;
+  if(rq)rq.textContent=challengeText;
+  if(cn)cn.textContent=TNAMES[me.team];
+}
+
+function sendPeerReaction(){
+  // Broadcast peer reaction
+  const raw=localStorage.getItem(CH);if(!raw)return;
+  let G;try{G=JSON.parse(raw);}catch(e){return;}
+  G.peerReaction={team:me.team,teamName:TNAMES[me.team],teamColor:TCOLS[me.team],ts:Date.now()};
+  try{localStorage.setItem(CH,JSON.stringify(G));}catch(e){}
+  syncPush(G);
+  const btn=document.getElementById('peerReactBtn');
+  if(btn){btn.textContent='👍 Sent!';btn.disabled=true;setTimeout(()=>{btn.textContent='👍 React to teammate';btn.disabled=false;},3000);}
+}
+
+function showPrepQuestions(doorIdx){
+  const prep=document.getElementById('prepSection');
+  if(!prep)return;
+  if(doorIdx===null||doorIdx===undefined){prep.style.display='none';return;}
+  const PREP_COMP=[
+    'What does this person do every day?',
+    'What skill does this career need?',
+    'What is one good thing about this career?',
+    'What is one challenge or risk?'
+  ];
+  const q1=document.getElementById('prepQ1List');
+  if(q1)q1.innerHTML=PREP_COMP.map(q=>`<div style="font-size:.82rem;padding:5px 8px;background:white;border-radius:6px;border:1px solid #6EE7B7;color:#0B1A2B">${q}</div>`).join('');
+  // Opinion question = build question for this door
+  if(typeof DOORS==='undefined')return;
+  const d=DOORS[doorIdx];if(!d)return;
+  const buildQ=d.q.find(([lv])=>lv==='build');
+  const opEl=document.getElementById('prepOpinionQ');
+  if(opEl&&buildQ)opEl.textContent=buildQ[1];
+  // Opinion frames
+  const OPINION_FRAMES=[
+    ['I think… is better','because…'],
+    ['I prefer…','because… is important to me'],
+    ['In my opinion…','is more important because…'],
+    ['I think it is good because…','but it is also difficult because…'],
+    ['Yes / No, I would…','because…']
+  ];
+  const fl=document.getElementById('prepFramesList');
+  if(fl)fl.innerHTML=OPINION_FRAMES.map(([s,c])=>`<div style="font-size:.78rem;padding:3px 6px;color:#065F46"><strong>${s}</strong> <span style="color:#555">${c}</span></div>`).join('');
+  prep.style.display='block';
+}
+
+function updateTeamButtons(G){
+  // Grey out teams that are not active (teacher set numTeams)
+  const numActive=G.numTeams||5;
+  TNAMES.forEach((n,i)=>{
+    const btn=document.getElementById('tb'+i);
+    if(!btn)return;
+    if(i>=numActive){
+      btn.style.opacity='.3';btn.style.pointerEvents='none';
+      btn.title='Not available this game';
+    } else {
+      btn.style.opacity='1';btn.style.pointerEvents='auto';
+    }
+  });
+}
+
+function processState(G){
+  if(!G||!G.teams)return;
+  const t=G.teams[me.team];if(!t)return;
+  updateAllWallets(t);
+  updateTeacherSpeakingTimer(G);
+  obeyTeacherTimerOverride(G);
+
+  // Coin deduction animation
+  if(me.prevCoins!==undefined&&t.coins<me.prevCoins){showCoinFly(me.prevCoins-t.coins);}
+  me.prevCoins=t.coins;
+
+  document.getElementById('stCoins').textContent=t.coins;
+  document.getElementById('stDoors').textContent=t.doors.length;
+  document.getElementById('stPts').textContent=t.score;
+
+  // Round 1 explore
+  if(G.round===1&&me.prevRound!==1){
+    me.prevRound=1;
+    showScreen('exploreScreen');
+  }
+
+  // New door opened
+  if(G.round>=2&&G.activeDoor!==null&&G.activeDoor!==me.prevDoor){
+    me.prevDoor=G.activeDoor;me.selectedQ=null;
+    document.getElementById('hcNotif').classList.remove('show');
+    renderDoorGrid(G);clearDetail();
+    showScreen('activeScreen');updateStepInd(2);startPrepTimer();
+  }
+
+  // Check if all team spoke — update buy button
+  updateBuyButton(t,G);
+
+  // HC notification
+  if(G.revealedCosts){
+    const newC=G.revealedCosts.filter(i=>!me.prevCosts.includes(i)&&t.doors.includes(i));
+    if(newC.length>0){showHCNotif(newC[newC.length-1]);me.prevCosts=[...G.revealedCosts];}
+  }
+
+  if(G.round!==undefined)me.prevRound=G.round;
+}
+
+function updateBuyButton(t,G){
+  const wrap=document.getElementById('buyBtnWrap');
+  const btn=document.getElementById('buyBtn');
+  if(!wrap||!btn||G.activeDoor===null)return;
+  const d=DOORS[G.activeDoor];
+  const allSpoke=t.spoke>=t.teamSize;
+  const canAfford=t.coins>=d.price;
+  if(allSpoke&&canAfford){
+    wrap.style.display='block';
+    btn.style.background=d.color;btn.style.color='white';
+    btn.textContent=`Buy ${d.name} — ${d.price} coins`;
+    btn.disabled=false;
+  } else if(allSpoke&&!canAfford){
+    wrap.style.display='block';
+    btn.style.background='#f3f3f3';btn.style.color='#aaa';
+    btn.textContent=`Not enough coins (need ${d.price})`;
+    btn.disabled=true;
+  } else {
+    wrap.style.display='block';
+    btn.style.background='#f3f3f3';btn.style.color='#aaa';
+    btn.textContent=`Speak first — then buy (${t.spoke}/${t.teamSize} spoke)`;
+    btn.disabled=true;
+  }
+}
+
+function buyThisDoor(){
+  try{
+    const raw=localStorage.getItem(CH);if(!raw)return;
+    const G=JSON.parse(raw);if(!G||G.activeDoor===null)return;
+    const t=G.teams[me.team];const d=DOORS[G.activeDoor];
+    if(t.coins<d.price)return;
+    t.coins-=d.price;
+    if(!t.doors.includes(G.activeDoor))t.doors.push(G.activeDoor);
+    t.score+=2;t.bd.push(`🚪 ${d.short} −${d.price}🪙 +2`);
+    localStorage.setItem(CH,JSON.stringify(G));
+    syncPush(G);
+    showCoinFly(d.price);
+    document.getElementById('stCoins').textContent=t.coins;
+    document.getElementById('stDoors').textContent=t.doors.length;
+    document.getElementById('stPts').textContent=t.score;
+    const btn=document.getElementById('buyBtn');
+    if(btn){btn.textContent='✓ Bought!';btn.style.background='#2E7D32';btn.disabled=true;}
+  }catch(e){}
+}
+
+function showCoinFly(amt){
+  const el=document.createElement('div');el.className='coin-fly';el.textContent=`−${amt}🪙`;
+  const sb=document.querySelector('.status-bar');
+  if(sb){const r=sb.getBoundingClientRect();el.style.left=r.right-80+'px';el.style.top=r.bottom+5+'px';}
+  else{el.style.left='80%';el.style.top='60px';}
+  document.body.appendChild(el);setTimeout(()=>el.remove(),800);
+}
+
+
+const DOOR_DISPLAY=[
+  {title:'Creator Studio',sub:'Content Creator Path'},
+  {title:'Startup Shop',sub:'Young Founder Path'},
+  {title:'Remote Hub',sub:'Freelance Path'},
+  {title:'Voice Studio',sub:'Podcaster Path'},
+  {title:'Corporate Tower',sub:'Corporate Professional Path'},
+  {title:'AI Lab',sub:'AI Expert Path'},
+  {title:'Wellness Studio',sub:'Wellness Coach Path'},
+  {title:'Design Studio',sub:'Creative Designer Path'}
+];
+function doorAsset(i){return `assets/door${i+1}.png`;}
+function doorTitle(i){return DOOR_DISPLAY[i]?.title || DOORS[i]?.name || '';}
+function doorSub(i){return DOOR_DISPLAY[i]?.sub || '';}
+function buildExploreGrid(){
+  document.getElementById('exploreGrid').innerHTML=DOORS.map((d,i)=>`
+    <div class="explore-card premium">
+      <img src="${doorAsset(i)}" alt="${doorTitle(i)}">
+      <div class="ec-body">
+        <div class="ec-name">${doorTitle(i)}</div>
+        <div class="ec-price" style="color:var(--teal)">${d.price} coins • ${doorSub(i)}</div>
+        <div class="ec-story" style="margin-top:8px">${d.story}</div>
+      </div>
+    </div>`).join('');
+}
+
+function renderDoorGrid(G){
+  const el=document.getElementById('doorGrid');if(!el)return;
+  el.innerHTML=DOORS.map((d,i)=>{
+    const owned=G.teams.some(t=>t.doors.includes(i));
+    const isCurrent=G.activeDoor===i;
+    const locked=!isCurrent;
+    return `<div class="sd premium-door ${isCurrent?'current':''} ${locked?'waiting':''}"
+      onclick="${locked?'':`showDetail(${i})`}">
+      <img src="${doorAsset(i)}" alt="${doorTitle(i)}">
+      <div class="premium-door-state">
+        ${owned?'Owned • ':''}${isCurrent?'Tap to Answer':'Waiting'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function showDetail(idx){
+  const d=DOORS[idx];
+  document.getElementById('detailTitle').textContent=doorTitle(idx);
+  document.getElementById('detailName').textContent=doorTitle(idx)+' — '+d.price+' coins • '+doorSub(idx);
+  document.getElementById('detailStory').textContent=d.story;
+  const ql=document.getElementById('qList');
+  ql.innerHTML=d.q.map(([lv,tx])=>`
+    <button class="q-btn" onclick="selectQ(this,'${tx.replace(/'/g,"\\'")}')">
+      <span class="q-lv ${lv}">${lv==='start'?'+1':lv==='build'?'+2':'+3'}</span>
+      <span class="q-text">${tx}</span>
+    </button>`).join('');
+  me.selectedQ=null;
+  document.getElementById('speakBtnWrap').style.display='none';
+  document.getElementById('doorSelectPanel').style.display='none';
+  document.getElementById('doorDetailWrap').style.display='block';
+  updateStepInd(3);
+  // Try update buy button immediately
+  try{const raw=localStorage.getItem(CH);if(raw){const G=JSON.parse(raw);updateBuyButton(G.teams[me.team],G);}}catch(e){}
+}
+
+function clearDetail(){
+  document.getElementById('doorDetailWrap').style.display='none';
+  document.getElementById('doorSelectPanel').style.display='block';
+  me.selectedQ=null;updateStepInd(2);
+}
+
+function selectQ(btn,text){
+  document.querySelectorAll('.q-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');me.selectedQ=text;
+  document.getElementById('speakBtnWrap').style.display='block';
+  // Update language frames to match question level
+  const lv=btn.querySelector('.q-lv');
+  const lvClass=lv?lv.classList[1]:'start';
+  const level=lv?lv.textContent.trim():'';
+  updateLangFrames(lvClass);
+  // Save selected question to state so teacher and screen can see it
+  saveStudentAction({type:'question',team:me.team,teamName:TNAMES[me.team],
+    teamColor:TCOLS[me.team],question:text,level:level,done:false});
+  // Auto-set timer based on level: +1 = 30s, +2/+3 = 45s
+  const autoBase = (level==='start') ? 30 : 45;
+  me.autoTimerBase = autoBase;
+}
+
+function saveStudentAction(data){
+  try{
+    const raw=localStorage.getItem(CH);if(!raw)return;
+    const G=JSON.parse(raw);
+    G.studentAction=data;
+    localStorage.setItem(CH,JSON.stringify(G));
+    syncPush(G);
+  }catch(e){}
+}
+
+
+function saveSpeakingTimer(left,running=true){
+  try{
+    const raw=localStorage.getItem(CH);if(!raw)return;
+    const G=JSON.parse(raw);
+    const timerBase = me.autoTimerBase || 45;
+  G.speakingTimer={running:!!running,left:Math.max(0,running?timerBase:left),base:timerBase,team:me.team,teamName:TNAMES[me.team],teamColor:TCOLS[me.team],question:me.selectedQ||''};
+    localStorage.setItem(CH,JSON.stringify(G));
+    if(left%5===0||!running)syncPush(G);
+  }catch(e){}
+}
+
+function clearSpeakingTimer(){
+  try{
+    const raw=localStorage.getItem(CH);if(!raw)return;
+    const G=JSON.parse(raw);
+    if(G.speakingTimer){G.speakingTimer.running=false;G.speakingTimer.left=0;G.speakingTimer.question=me.selectedQ||G.speakingTimer.question||'';}
+    localStorage.setItem(CH,JSON.stringify(G));
+  }catch(e){}
+}
+
+function updateStepInd(active){
+  const items=document.querySelectorAll('#stepInd .si-item');
+  items.forEach((s,i)=>{
+    s.className='si-item';const sn=s.querySelector('.si-num');
+    if(i+1<active){s.classList.add('done');if(sn)sn.textContent='✓';}
+    else if(i+1===active){s.classList.add('active');if(sn)sn.textContent=i+1;}
+    else{if(sn)sn.textContent=i+1;}
+  });
+}
+
+function startPrepTimer(){
+  // Student prep timer removed: students only choose a question and start speaking.
+  clearInterval(me.prepInt);
+  const box=document.getElementById('prepBox');
+  if(box)box.classList.remove('show');
+}
+
+function startSpeaking(){
+  if(!me.selectedQ){alert('Please choose a question first.');return;}
+  clearInterval(me.prepInt);document.getElementById('prepBox').classList.remove('show');
+  document.getElementById('speakQ').textContent=me.selectedQ;
+  me.speakLeft=45;updateSpeakDisplay();updateSandBig(1);saveSpeakingTimer(me.speakLeft,true);
+  document.getElementById('speakOverlay').classList.add('active');
+  updateStepInd(4);clearInterval(me.speakInt);
+  me.speakInt=setInterval(()=>{
+    me.speakLeft--;updateSpeakDisplay();updateSandBig(me.speakLeft/45);saveSpeakingTimer(me.speakLeft,me.speakLeft>0);
+    if(me.speakLeft<=0){clearInterval(me.speakInt);clearSpeakingTimer();}
+  },1000);
+}
+
+function startSpeakingWith(text){me.selectedQ=text;startSpeaking();}
+
+function updateSpeakDisplay(){
+  const el=document.getElementById('sandDigs');if(!el)return;
+  el.textContent=me.speakLeft>0?me.speakLeft:'✓';
+  el.className='sand-digs'+(me.speakLeft<=5?' danger':me.speakLeft<=15?' warn':'');
+}
+
+function updateSandBig(prog){
+  const wrap=document.querySelector('.sand-wrap');if(wrap)wrap.style.setProperty('--timer-progress',Math.max(0,Math.min(1,prog)));
+  const top=document.getElementById('sBTop');const bot=document.getElementById('sBBot');
+  const maxH=82;const topH=Math.max(0,prog*maxH);const botH=Math.max(0,(1-prog)*maxH);
+  const col=me.speakLeft<=5?'#DC2626':me.speakLeft<=15?'#D97706':'#7C3AED';
+  if(top){top.setAttribute('height',topH);top.setAttribute('y',18+(maxH-topH));top.setAttribute('fill',col);}
+  if(bot){bot.setAttribute('height',botH);bot.setAttribute('y',182-botH);bot.setAttribute('fill',col);}
+}
+
+function stopSpeaking(){
+  clearInterval(me.speakInt);clearSpeakingTimer();
+  document.getElementById('speakOverlay').classList.remove('active');
+  // Notify teacher that student is done
+  // Show peer reaction button for teammates
+  const reactBtn=document.getElementById('peerReactBtn');
+  if(reactBtn)reactBtn.style.display='block';
+  saveStudentAction({type:'done',team:me.team,teamName:TNAMES[me.team],
+    teamColor:TCOLS[me.team],question:me.selectedQ||'',done:true});
+  showScreen('doneScreen');
+}
+
+function nextStudent(){
+  me.selectedQ=null;
+  document.querySelectorAll('.q-btn').forEach(b=>b.classList.remove('sel'));
+  document.getElementById('speakBtnWrap').style.display='none';
+  document.getElementById('hcNotif').classList.remove('show');
+  clearDetail();showScreen('activeScreen');updateStepInd(2);startPrepTimer();
+}
+
+function showHCNotif(i){
+  const d=DOORS[i];
+  document.getElementById('hcnDoor').textContent=d.icon+' '+d.name;
+  document.getElementById('hcnCost').textContent=d.cost;
+  document.getElementById('hcNotif').classList.add('show');
+  showScreen('activeScreen');window.scrollTo(0,0);
+}
+
+buildTeamBtns();
+</script>
+</body>
+</html>
+
+<style id="final-scale-and-timer-fix">
+/* FINAL STUDENT SCALE FIX — compact cards, visible wallet, shared speaking timer */
+#exploreScreen .body,
+#activeScreen .body{
+  padding:12px 16px 18px!important;
+  overflow:auto!important;
+}
+#exploreScreen .pt,
+#activeScreen .pt{
+  margin-bottom:10px!important;
+}
+#exploreGrid{
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:12px!important;
+  max-width:1180px!important;
+  margin:0 auto!important;
+  align-items:start!important;
+}
+.explore-card.premium{
+  border-radius:16px!important;
+  background:#FFFDF8!important;
+  box-shadow:0 10px 24px rgba(11,26,43,.12)!important;
+}
+.explore-card.premium img{
+  width:100%!important;
+  height:170px!important;
+  object-fit:contain!important;
+  display:block!important;
+  padding:4px!important;
+  background:#FFFDF8!important;
+}
+.explore-card.premium .ec-body{
+  padding:8px 10px 10px!important;
+  min-height:0!important;
+}
+.explore-card.premium .ec-name{
+  font-size:1rem!important;
+  line-height:1.05!important;
+  text-align:center!important;
+  font-family:Georgia,'Times New Roman',serif!important;
+  color:var(--navy)!important;
+}
+.explore-card.premium .ec-price{
+  font-size:.72rem!important;
+  text-align:center!important;
+}
+#doorGrid.door-grid{
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:12px!important;
+}
+.sd.premium-door img{
+  width:100%!important;
+  height:150px!important;
+  object-fit:contain!important;
+  padding:3px!important;
+  background:#FFFDF8!important;
+}
+.premium-door-state{
+  font-size:.65rem!important;
+  margin-top:4px!important;
+}
+.team-wallet{
+  max-width:1120px!important;
+  margin:10px auto 8px!important;
+  padding:12px 14px!important;
+}
+.team-wallet-name{
+  font-size:1.35rem!important;
+}
+.team-wallet-num{
+  font-size:2.35rem!important;
+}
+.team-wallet-stat{
+  min-height:62px!important;
+}
+.global-speaking-timer{
+  top:10px!important;
+  min-width:min(640px,94vw)!important;
+  padding:13px 18px!important;
+}
+.gst-digits{
+  font-size:3.2rem!important;
+}
+.gst-label{
+  font-size:.78rem!important;
+}
+@media(max-width:1000px){
+  #exploreGrid,#doorGrid.door-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;}
+  .explore-card.premium img{height:150px!important;}
+  .sd.premium-door img{height:135px!important;}
+}
+@media(max-width:700px){
+  #exploreScreen .body,#activeScreen .body{padding:10px!important;}
+  #exploreGrid,#doorGrid.door-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;}
+  .explore-card.premium img{height:128px!important;}
+  .sd.premium-door img{height:120px!important;}
+  .explore-card.premium .ec-name{font-size:.9rem!important;}
+  .explore-card.premium .ec-price{font-size:.62rem!important;}
+  .team-wallet{margin:8px 8px 6px!important;padding:10px!important;}
+  .team-wallet-name{font-size:1.18rem!important;}
+  .team-wallet-num{font-size:2rem!important;}
+}
+@media(max-width:430px){
+  .explore-card.premium img{height:112px!important;}
+  .sd.premium-door img{height:106px!important;}
+}
+</style>

@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>The Door Auction — Smart Board</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Bebas+Neue&family=Playfair+Display:ital,wght@1,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FFF8F0;--white:#fff;--dark:#1A0A2E;--border:#E8DDD5;--muted:#888;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--dark);overflow:hidden}
+
+/* TOP BAR */
+.top{height:52px;background:var(--dark);color:white;display:flex;align-items:center;
+  justify-content:space-between;padding:0 20px;flex-shrink:0}
+.brand{font-family:'Bebas Neue';letter-spacing:4px;font-size:1.5rem}
+.brand span{color:#C084FC}
+.round-badge{background:rgba(255,255,255,.15);border-radius:20px;padding:5px 16px;
+  font-size:.72rem;font-weight:800;letter-spacing:1px}
+.top-right{display:flex;align-items:center;gap:16px}
+
+/* SAND CLOCK TIMER */
+.timer-wrap{display:flex;align-items:center;gap:10px}
+.sand-big{width:52px;height:66px;flex-shrink:0}
+.t-digits-big{font-family:'Bebas Neue';font-size:2.8rem;color:white;letter-spacing:2px;
+  line-height:1;text-align:right;min-width:90px;transition:color .3s}
+.t-digits-big.warn{color:#FCD34D}
+.t-digits-big.danger{color:#F87171;animation:bl .5s infinite}
+@keyframes bl{50%{opacity:.4}}
+.t-label-big{font-size:.58rem;letter-spacing:2px;color:rgba(255,255,255,.5);
+  text-transform:uppercase;text-align:right}
+
+/* MAIN */
+.main{height:calc(100vh - 52px - 72px);display:grid;grid-template-rows:auto auto 1fr;padding:12px;gap:10px;overflow:hidden}
+
+/* DOORS ROW */
+.doors-row{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}
+.dc{background:white;border-radius:12px;border:2.5px solid transparent;
+  padding:10px 8px;display:flex;flex-direction:column;align-items:center;
+  text-align:center;position:relative;overflow:hidden;transition:.3s;
+  box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.dc.active{border-color:var(--dc-col);box-shadow:0 4px 24px rgba(0,0,0,.15);
+  transform:translateY(-4px);animation:doorPulse 2s infinite}
+@keyframes doorPulse{
+  0%,100%{box-shadow:0 4px 20px rgba(0,0,0,.1)}
+  50%{box-shadow:0 8px 40px rgba(0,0,0,.2),0 0 0 3px color-mix(in srgb,var(--dc-col) 20%,transparent)}}
+.dc.owned{opacity:.8}
+.dc::before{content:"";position:absolute;top:0;left:0;right:0;height:5px;background:var(--dc-col)}
+.dc-num{font-size:.6rem;font-weight:900;color:var(--dc-col);position:absolute;top:7px;left:7px}
+.dc-price{font-family:'Bebas Neue';font-size:1.1rem;color:var(--dc-col);position:absolute;top:6px;right:7px}
+.dc-door{width:46px;height:60px;border-radius:14px 14px 5px 5px;
+  margin:14px auto 4px;border:2.5px solid var(--dc-col);
+  position:relative;background:color-mix(in srgb,var(--dc-col) 12%,white)}
+.dc-knob{width:7px;height:7px;border-radius:50%;background:var(--dc-col);
+  position:absolute;right:5px;top:52%;transform:translateY(-50%)}
+.dc-ico{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:1.1rem}
+.dc-name{font-size:.75rem;font-weight:800;color:var(--dark);line-height:1.2;margin-top:2px}
+.dc-owners{display:flex;gap:2px;justify-content:center;flex-wrap:wrap;min-height:14px;margin-top:3px}
+.ot{font-size:.55rem;font-weight:900;padding:1px 6px;border-radius:999px;color:white}
+
+/* ACTIVE DOOR STORY PANEL */
+.story-panel{display:none;background:white;border-radius:14px;border:2.5px solid;
+  padding:16px 20px;margin-bottom:0;animation:slideIn .3s ease;position:relative}
+@keyframes slideIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.story-panel.show{display:block}
+.sp-header{display:flex;align-items:center;gap:14px;margin-bottom:10px}
+.sp-icon{font-size:2.5rem;line-height:1}
+.sp-name{font-size:1.3rem;font-weight:900;color:var(--dark)}
+.sp-price{font-size:.85rem;font-weight:700;margin-top:2px}
+.sp-text{font-size:1rem;color:#444;line-height:1.7}
+
+/* TEAMS ROW */
+.teams-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;min-height:0}
+.tc{background:white;border-radius:16px;border:2px solid var(--border);
+  overflow:hidden;position:relative;transition:.3s;display:flex;flex-direction:column}
+.tc.lead{border-width:3px;border-color:var(--tc-col);
+  background:color-mix(in srgb,var(--tc-col) 6%,white);
+  box-shadow:0 6px 30px rgba(0,0,0,.12)}
+.tc-top{height:6px}
+.tc-body{padding:14px;flex:1;display:flex;flex-direction:column;gap:4px}
+.tc-name{font-size:.85rem;font-weight:800;letter-spacing:.3px}
+.tc-score{font-family:'Bebas Neue';font-size:4.5rem;color:var(--dark);line-height:1}
+.tc-pts{font-size:.65rem;color:var(--muted);letter-spacing:1px}
+.tc-meta{display:flex;justify-content:space-between;font-size:.75rem;color:#666;margin-top:3px}
+.spoke-section{margin-top:6px;padding:8px;border-radius:10px;background:rgba(0,0,0,.03)}
+.spoke-lbl{font-size:.58rem;font-weight:800;letter-spacing:1.5px;color:var(--muted);
+  text-transform:uppercase;margin-bottom:5px}
+.spoke-count{font-family:'Bebas Neue';font-size:1.8rem;line-height:1;margin-bottom:4px}
+.spoke-dots{display:flex;gap:4px;flex-wrap:wrap}
+.sdot{width:11px;height:11px;border-radius:50%}
+.crown{position:absolute;top:10px;right:12px;font-size:1.3rem}
+.bd{display:none}
+.bdi{font-size:.6rem;color:#666;background:rgba(0,0,0,.04);padding:2px 6px;border-radius:4px}
+.doors-owned{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.door-chip{font-size:.62rem;padding:2px 8px;border-radius:999px;color:white;font-weight:700}
+
+
+/* LARGE FLOATING SPEAKING TIMER — shown only while speaking timer is running */
+.float-speak-timer{position:fixed;top:58px;left:50%;transform:translateX(-50%) translateY(-120%);
+  width:min(720px,calc(100vw - 32px));z-index:95;padding:10px 18px;border-radius:0 0 18px 18px;
+  background:linear-gradient(135deg,#FF6B00,#F59E0B);color:white;box-shadow:0 12px 36px rgba(26,10,46,.28);
+  border:2px solid rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;gap:18px;
+  pointer-events:none;opacity:0;transition:.25s ease}
+.float-speak-timer.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.float-speak-label{font-size:.72rem;font-weight:900;letter-spacing:3px;text-transform:uppercase;opacity:.9}
+.float-speak-digits{font-family:'Bebas Neue';font-size:4.2rem;line-height:.9;letter-spacing:3px;min-width:130px;text-align:center}
+.float-speak-help{font-size:.85rem;font-weight:800;opacity:.9}
+.float-speak-timer.warn{background:linear-gradient(135deg,#D97706,#FBBF24)}
+.float-speak-timer.danger{background:linear-gradient(135deg,#DC2626,#F87171);animation:floatBlink .5s infinite}
+@keyframes floatBlink{50%{filter:brightness(1.18)}}
+
+/* OVERLAYS */
+.overlay{position:fixed;inset:0;display:none;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;z-index:100;
+  backdrop-filter:blur(8px);padding:40px}
+.overlay.show{display:flex;animation:fadeIn .5s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+.hc-overlay{background:rgba(255,245,245,.97)}
+.hco-eye{font-size:.75rem;font-weight:800;letter-spacing:5px;
+  text-transform:uppercase;color:#DC2626;margin-bottom:16px}
+.hco-icon{font-size:5rem;margin-bottom:12px;animation:bounce 1s infinite}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.hco-name{font-family:'Bebas Neue';font-size:clamp(2.5rem,5vw,4.5rem);
+  color:var(--dark);letter-spacing:4px;margin-bottom:14px}
+.hco-cost{font-size:clamp(1.1rem,2.5vw,1.6rem);color:#7F1D1D;
+  font-style:italic;line-height:1.6;max-width:700px;margin-bottom:20px}
+.hco-own{font-size:.9rem;color:#666;margin-bottom:22px}
+.hco-react{padding:18px 28px;border-radius:16px;background:white;
+  border:2px solid #FCA5A5;max-width:600px}
+.hco-rt{font-size:.65rem;font-weight:800;letter-spacing:2px;
+  color:#DC2626;text-transform:uppercase;margin-bottom:10px}
+.hco-ri{font-size:1rem;color:#444;line-height:2.2}
+.hco-ri span{color:#7C3AED;font-weight:700}
+
+.power-overlay{background:rgba(245,240,255,.97)}
+.po-eye{font-size:.75rem;font-weight:800;letter-spacing:5px;text-transform:uppercase;color:#7C3AED;margin-bottom:16px}
+.po-doors{font-size:5rem;margin-bottom:14px;animation:bounce 1s infinite}
+.po-title{font-family:'Bebas Neue';font-size:clamp(3rem,7vw,6.5rem);color:var(--dark);letter-spacing:6px;margin-bottom:10px}
+.po-quote{font-size:1.15rem;color:#555;font-style:italic;max-width:550px;line-height:1.7;margin-bottom:16px}
+.po-bonus{font-family:'Bebas Neue';font-size:3.5rem;color:#7C3AED}
+
+/* SIG */
+.sig-bar{background:var(--dark);color:white;padding:6px 20px;
+  display:flex;align-items:center;justify-content:center;gap:14px;flex-shrink:0}
+.sig{font-family:'Playfair Display',serif;font-style:italic;color:#C084FC;font-size:.85rem}
+.sig-title{font-size:.55rem;letter-spacing:2px;color:rgba(255,255,255,.4);text-transform:uppercase}
+
+
+/* VISUAL POLISH UPGRADE — game-show feel without changing structure */
+body{background:
+  radial-gradient(circle at 18% 12%,rgba(192,132,252,.20),transparent 28%),
+  radial-gradient(circle at 82% 8%,rgba(255,107,0,.16),transparent 25%),
+  linear-gradient(180deg,#FFF8F0 0%,#FFF3E6 100%)}
+.top{box-shadow:0 10px 28px rgba(26,10,46,.22);border-bottom:2px solid rgba(255,255,255,.08)}
+.brand{text-shadow:0 2px 12px rgba(192,132,252,.35)}
+.dc{min-height:118px;border-width:2px;background:linear-gradient(180deg,#fff 0%,#FFFCF8 100%);box-shadow:0 8px 22px rgba(26,10,46,.08)}
+.dc::after{content:"LOCKED";position:absolute;bottom:7px;left:50%;transform:translateX(-50%);font-size:.46rem;letter-spacing:1.4px;font-weight:900;color:rgba(26,10,46,.28)}
+.dc.active{transform:translateY(-6px) scale(1.035);z-index:4;box-shadow:0 16px 40px rgba(26,10,46,.22),0 0 0 4px color-mix(in srgb,var(--dc-col) 18%,transparent)}
+.dc.active::after{content:"ON SALE";color:white;background:var(--dc-col);padding:3px 8px;border-radius:999px;bottom:6px;box-shadow:0 4px 12px color-mix(in srgb,var(--dc-col) 35%,transparent)}
+.dc.owned:not(.active)::after{content:"OWNED";color:var(--dc-col);background:color-mix(in srgb,var(--dc-col) 10%,white);padding:3px 8px;border-radius:999px}
+.dc-door{width:54px;height:68px;box-shadow:inset 0 -8px 0 rgba(255,255,255,.45),0 8px 22px color-mix(in srgb,var(--dc-col) 24%,transparent)}
+.dc.active .dc-door{animation:doorGlow 1.6s infinite}
+@keyframes doorGlow{50%{box-shadow:inset 0 -8px 0 rgba(255,255,255,.45),0 0 26px color-mix(in srgb,var(--dc-col) 52%,transparent)}}
+.dc-price{background:color-mix(in srgb,var(--dc-col) 12%,white);padding:1px 6px;border-radius:999px;right:6px}
+.story-panel{background:linear-gradient(180deg,#fff 0%,#FFFCF8 100%);box-shadow:0 12px 32px rgba(26,10,46,.10);padding:18px 22px 18px 24px;overflow:hidden}
+.story-panel::before{content:"ACTIVE DOOR ON SALE";position:absolute;top:10px;right:16px;font-size:.58rem;letter-spacing:2px;font-weight:900;color:var(--dark);opacity:.33}
+.sp-name{font-size:1.55rem}.sp-text{font-size:1.08rem}.sp-icon{filter:drop-shadow(0 6px 10px rgba(26,10,46,.18))}
+#studentBar{box-shadow:0 10px 28px rgba(124,58,237,.13);background:linear-gradient(90deg,#F5F0FF 0%,#FFF 55%,#FFF8F0 100%)!important}
+.tc{background:linear-gradient(180deg,#fff 0%,#FFFCF8 100%);box-shadow:0 8px 20px rgba(26,10,46,.07)}
+.tc.lead{transform:translateY(-4px);box-shadow:0 18px 40px rgba(26,10,46,.14),0 0 0 4px color-mix(in srgb,var(--tc-col) 11%,transparent)}
+.tc-score{text-shadow:0 5px 14px rgba(26,10,46,.10)}
+.tc-meta span{padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.75);border:1px solid rgba(0,0,0,.05);font-weight:800}
+.spoke-section{background:linear-gradient(180deg,rgba(0,0,0,.035),rgba(255,255,255,.45));border:1px solid rgba(0,0,0,.04)}
+.door-chip{box-shadow:0 5px 12px rgba(26,10,46,.12)}
+.sold-toast{position:fixed;left:50%;top:86px;transform:translateX(-50%) translateY(-140%);z-index:140;width:min(620px,calc(100vw - 34px));background:linear-gradient(135deg,#1A0A2E,#3B166E);color:white;border:2px solid rgba(255,255,255,.25);border-radius:22px;padding:18px 24px;text-align:center;box-shadow:0 20px 60px rgba(26,10,46,.35);opacity:0;pointer-events:none;transition:.32s ease}
+.sold-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.sold-word{font-family:'Bebas Neue';font-size:3.6rem;letter-spacing:5px;line-height:.9;color:#FCD34D;text-shadow:0 0 18px rgba(252,211,77,.35)}
+.sold-line{font-size:1.05rem;font-weight:800;margin-top:6px;color:rgba(255,255,255,.88)}
+
+
+
+/* ===== PREMIUM HIGHER-EDUCATION SIMULATION THEME ===== */
+:root{
+  --bg:#F4EFE5;--white:#fff;--dark:#0B1A2B;--navy:#0B1A2B;--navy2:#132B46;
+  --ivory:#F7F0E3;--gold:#C99A3B;--gold2:#E5C16B;--teal:#0E6B72;
+  --border:#D6C6A8;--muted:#7B7569;--burgundy:#5C1426;--forest:#123A2D;
+}
+html,body{background:radial-gradient(circle at 50% 0%,#FFF8EA 0%,#F4EFE5 44%,#E7DAC4 100%);color:var(--navy)}
+.top{background:linear-gradient(135deg,#071421,#132B46);border-bottom:1px solid rgba(201,154,59,.45);box-shadow:0 8px 24px rgba(11,26,43,.18)}
+.brand,.top-title{font-family:Georgia,'Times New Roman',serif!important;font-weight:800;letter-spacing:2px!important;color:#F8F0DD!important}.brand span,.top-title span{color:var(--gold2)!important}
+.round-badge,.pill{background:rgba(247,240,227,.1)!important;border:1px solid rgba(229,193,107,.38)!important;color:#F7F0E3!important}
+.panel,.story-panel,.tc,.dc,.student-card,.sd,.explore-card,.q-btn{border-color:var(--border)!important;box-shadow:0 12px 30px rgba(11,26,43,.08)}
+.btn.primary,.btn.primary:hover{background:linear-gradient(135deg,#071421,#123A46)!important;color:#F8F0DD!important;border-color:var(--gold)!important;box-shadow:0 10px 24px rgba(11,26,43,.18)}
+
+/* Premium first-page / landing screens */
+#pin,.join-wrap{
+  background:
+    radial-gradient(circle at 50% 22%, rgba(229,193,107,.24), transparent 32%),
+    linear-gradient(rgba(244,239,229,.82),rgba(244,239,229,.88)),
+    linear-gradient(135deg,#d2c3aa,#f7f0e3 42%,#b6a17c);
+  position:relative;overflow:hidden;color:var(--navy)!important;
+}
+#pin:before,.join-wrap:before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.42;background:
+  linear-gradient(110deg, transparent 0 8%, rgba(11,26,43,.12) 8% 9%, transparent 9% 19%, rgba(201,154,59,.14) 19% 20%, transparent 20%),
+  radial-gradient(ellipse at 20% 78%, rgba(11,26,43,.14), transparent 22%),
+  radial-gradient(ellipse at 80% 74%, rgba(14,107,114,.14), transparent 24%)}
+#pin:after,.join-wrap:after{content:"";position:absolute;left:0;right:0;bottom:0;height:36%;pointer-events:none;opacity:.38;background:
+  repeating-linear-gradient(90deg,rgba(11,26,43,.13) 0 2px, transparent 2px 92px),
+  repeating-linear-gradient(0deg,rgba(201,154,59,.18) 0 2px, transparent 2px 72px);clip-path:polygon(0 22%,100% 0,100% 100%,0 100%)}
+.landing-shell{position:relative;z-index:1;width:min(980px,92vw);display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px}
+.landing-logo{font-family:Georgia,'Times New Roman',serif;font-weight:900;line-height:.9;letter-spacing:2px;font-size:clamp(3.4rem,8vw,7rem);color:var(--navy);text-shadow:0 4px 0 rgba(255,255,255,.65),0 18px 32px rgba(11,26,43,.18)}
+.landing-logo .gold{display:block;color:var(--gold);font-size:.82em;text-shadow:0 3px 0 rgba(255,255,255,.7),0 16px 28px rgba(94,62,17,.22)}
+.landing-ribbon{margin-top:2px;background:linear-gradient(135deg,#071421,#132B46);color:#F7F0E3;border:1px solid var(--gold);border-radius:999px;padding:8px 28px;font-weight:900;letter-spacing:4px;text-transform:uppercase;box-shadow:0 8px 22px rgba(11,26,43,.22)}
+.landing-slogan{font-family:Georgia,'Times New Roman',serif;font-weight:800;letter-spacing:4px;font-size:clamp(1.1rem,2.7vw,2rem);color:var(--navy);margin:4px 0 0}.landing-slogan .dot{color:var(--teal);margin:0 10px}.landing-note{font-weight:700;color:#314154;font-size:1rem}
+.access-panel{width:min(620px,92vw);background:rgba(255,251,242,.93);border:1.5px solid var(--border);border-radius:28px;padding:22px 28px;box-shadow:0 22px 55px rgba(11,26,43,.18),inset 0 1px 0 rgba(255,255,255,.9);position:relative}
+.access-panel h2{font-family:Georgia,'Times New Roman',serif;font-size:1.55rem;letter-spacing:2px;margin:0 0 4px;color:var(--navy);text-transform:uppercase}.access-panel p{margin:0 0 14px;color:#425064;font-weight:600}.pin-input,.code-in{background:#FFFDF8!important;color:var(--navy)!important;border:1.5px solid #BCA879!important;box-shadow:inset 0 3px 10px rgba(11,26,43,.06);border-radius:12px!important}.pin-input{width:210px!important;font-size:2rem!important;letter-spacing:10px!important}.landing-btn,.join-wrap .btn.primary{background:linear-gradient(135deg,#071421,#0E3D45)!important;color:#F9EDD4!important;border:1px solid var(--gold)!important;border-radius:12px!important;padding:14px 34px!important;font-size:1rem!important;font-weight:900!important;letter-spacing:1px;box-shadow:0 12px 28px rgba(11,26,43,.22)}
+.landing-signature,.sig,.sig-title{position:relative;z-index:1}.landing-signature{margin-top:4px;background:linear-gradient(135deg,#071421,#132B46);color:#F7F0E3;border:1px solid var(--gold);border-radius:16px;padding:10px 34px;box-shadow:0 14px 28px rgba(11,26,43,.22)}.landing-signature strong{display:block;font-family:Georgia,'Times New Roman',serif;font-size:1.2rem;letter-spacing:1.5px}.landing-signature span{display:block;font-size:.75rem;color:var(--gold2);font-weight:800;margin-top:2px}
+.team-btns{gap:10px!important}.tb{background:linear-gradient(135deg,#10233A,#1D3550)!important;color:#F7F0E3!important;border:1px solid rgba(201,154,59,.55)!important;border-radius:12px!important;box-shadow:0 10px 20px rgba(11,26,43,.16);font-weight:900!important}.tb.sel{background:linear-gradient(135deg,var(--tc,#0E6B72),#071421)!important;color:#fff!important;border-color:var(--gold)!important;transform:translateY(-2px)}
+
+/* Premium career cards */
+.career-card-img{display:block;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 10px 16px rgba(11,26,43,.16));border-radius:12px}.dc.card-mode{background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;overflow:visible!important}.dc.card-mode.active{transform:translateY(-5px) scale(1.015);filter:drop-shadow(0 0 16px rgba(201,154,59,.42))}.dc.card-mode.owned{opacity:.95}.dc.card-mode .career-card-wrap{position:relative;width:100%;height:100%;min-height:122px}.dc.card-mode .dc-owners{position:absolute;left:9%;right:9%;bottom:6%;justify-content:center}.dc.card-mode .ot{background:linear-gradient(135deg,#071421,#0E6B72)!important;border:1px solid var(--gold);font-size:.55rem;color:#F7F0E3}.dc.card-mode .dc-open-btn{margin-top:4px;background:linear-gradient(135deg,#071421,#123A46)!important;color:#F8F0DD!important;border:1px solid var(--gold)!important;border-radius:10px!important}.door-visual-large{width:120px;max-width:26vw;border-radius:18px;box-shadow:0 16px 30px rgba(11,26,43,.18);border:1px solid var(--gold);background:#fff}.sp-icon{font-size:0!important}.sp-header{align-items:flex-start}.sp-name{font-family:Georgia,'Times New Roman',serif!important;letter-spacing:.5px;color:var(--navy)!important}.sp-price{color:var(--gold)!important}.story-panel{background:linear-gradient(135deg,#FFFDF8,#F6EBD8)!important;border-color:var(--gold)!important;border-radius:22px!important}
+
+/* Smart board and cards */
+.main{background:radial-gradient(circle at 50% 0%,rgba(229,193,107,.16),transparent 36%)}.teams-row .tc,.tg .tc{background:linear-gradient(135deg,#FFFDF8,#F3E8D5)!important;border-radius:18px!important;border:1.5px solid var(--border)!important}.tc.lead{box-shadow:0 0 0 2px var(--gold),0 18px 36px rgba(11,26,43,.14)!important}.tc-name{font-family:Georgia,'Times New Roman',serif!important}.tc-score{font-family:Georgia,'Times New Roman',serif!important;font-weight:900!important;color:var(--navy)!important}.spoke-section{background:rgba(11,26,43,.04)!important;border:1px solid rgba(188,168,121,.35)!important}.door-chip{background:linear-gradient(135deg,#071421,#0E6B72)!important;border:1px solid var(--gold);color:#F7F0E3!important}.float-speak-timer{background:linear-gradient(135deg,#071421,#0E3D45)!important;border-color:var(--gold)!important;color:#F8F0DD!important}.float-speak-timer.warn{background:linear-gradient(135deg,#745019,#C99A3B)!important}.float-speak-timer.danger{background:linear-gradient(135deg,#5C1426,#9F2D3E)!important}
+
+/* Risk / sold moments */
+.hc-overlay{background:rgba(10,16,24,.82)!important}.hco-eye{color:var(--gold2)!important}.hco-name,.po-title{font-family:Georgia,'Times New Roman',serif!important;color:#F7F0E3!important}.hco-cost{background:rgba(255,251,242,.94);border:1px solid var(--gold);border-radius:20px;padding:22px;color:#5C1426!important;box-shadow:0 22px 60px rgba(0,0,0,.25)}.hco-react{border-color:var(--gold)!important}.power-overlay{background:rgba(10,16,24,.84)!important}.po-bonus{color:var(--gold2)!important}.sold-toast,.sold-flash{background:linear-gradient(135deg,#071421,#132B46)!important;border-color:var(--gold)!important}.sold-word,.sold-flash strong{color:var(--gold2)!important}
+
+/* Student speaking premium stage */
+.speak-overlay{background:radial-gradient(circle at 50% 0%,rgba(201,154,59,.25),transparent 36%),linear-gradient(135deg,#071421,#132B46)!important}.speak-q{background:rgba(255,251,242,.96)!important;border:1.5px solid var(--gold)!important;color:var(--navy)!important;border-radius:24px!important;box-shadow:0 22px 60px rgba(0,0,0,.28)!important}.timer-ring{border-color:rgba(201,154,59,.42)!important;background:rgba(255,251,242,.08)!important}.timer-ring::before{background:#071421!important;border-color:var(--gold)!important}.speak-num{color:#F7F0E3!important}.speak-frame{background:rgba(255,251,242,.96)!important;border:1.5px solid var(--gold)!important;color:var(--navy)!important}.sf-title{color:var(--teal)!important}.sf-item span{color:#8A5E19!important}
+
+/* Student door cards */
+.sd.premium-door{background:transparent!important;border:0!important;padding:0!important;box-shadow:none!important;opacity:1!important;overflow:visible!important}.sd.premium-door.waiting{filter:grayscale(.18) opacity(.52);pointer-events:none}.sd.premium-door.current{filter:none;transform:translateY(-2px)}.sd.premium-door img{width:100%;border-radius:16px;box-shadow:0 14px 28px rgba(11,26,43,.18);border:1px solid var(--gold)}.premium-door-state{margin-top:6px;text-align:center;font-size:.7rem;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--teal)}.explore-card.premium{padding:0;overflow:hidden}.explore-card.premium img{width:100%;display:block}.explore-card.premium .ec-body{padding:12px 14px;background:#FFFDF8}.door-grid{grid-template-columns:1fr 1fr!important;gap:14px!important}@media(min-width:560px){.door-grid{grid-template-columns:repeat(2,1fr)!important}}
+
+/* Teacher control-room polish */
+.right{scrollbar-color:var(--gold) rgba(11,26,43,.08)}.timer-modes .tm-btn,.rb,.qi,.buy-row select,.hc-btn{border-color:var(--border)!important}.tm-btn.am-prep,.tm-btn.am-spk,.rb.ar{background:#F7F0E3!important;color:var(--navy)!important;border-color:var(--gold)!important}.student-action-panel,#studentActionPanel{border-color:var(--gold)!important;background:linear-gradient(135deg,#FFFDF8,#F4E8D2)!important}.log .li,.li{background:#FFFDF8!important;border:1px solid rgba(188,168,121,.3)!important}
+
+/* final sizing fixes for premium career card images */
+.dc.card-mode::before{display:none!important}.dc.card-mode{min-width:0}.doors-row .dc.card-mode .career-card-wrap{height:176px}.door-track .dc.card-mode .career-card-wrap{height:132px}.door-track .dc.card-mode .dc-open-btn{font-size:.62rem;padding:5px 6px}.doors-row{align-items:start}.door-track{align-items:start}.career-card-img{object-fit:contain!important}.doors-row .career-card-img,.door-track .career-card-img{max-height:100%}.story-panel .sp-icon{width:auto}.story-panel .sp-header{gap:18px}.sig-bar{background:linear-gradient(135deg,#071421,#132B46);border-top:1px solid rgba(201,154,59,.4)}.crown{font-size:0!important}.crown:after{content:'LEADER';font-size:.62rem;font-weight:900;color:var(--gold);border:1px solid var(--gold);border-radius:999px;padding:3px 8px;background:#071421}.tc-meta span{font-weight:800}.student-action-panel .pt,#studentActionPanel .pt{color:var(--teal)!important}
+@media(max-width:1200px){.doors-row .dc.card-mode .career-card-wrap{height:150px}.door-track .dc.card-mode .career-card-wrap{height:115px}}
+
+</style>
+</head>
+<body>
+
+<!-- HC OVERLAY -->
+<div class="overlay hc-overlay" id="hcOverlay">
+  <div class="hco-eye">⚠ Hidden Cost Revealed</div>
+  <div class="hco-icon" id="hcoIcon"></div>
+  <div class="hco-name" id="hcoName"></div>
+  <div class="hco-cost" id="hcoCost"></div>
+  <div class="hco-own" id="hcoOwn"></div>
+  <div class="hco-react">
+    <div class="hco-rt">Your Team Owns This Door — React Now</div>
+    <div class="hco-ri"><span>I still think it was worth it because…</span> _____</div>
+    <div class="hco-ri"><span>Now I am not sure because…</span> _____</div>
+    <div class="hco-ri"><span>The cost I am most worried about is…</span> _____</div>
+  </div>
+</div>
+
+<!-- POWER OVERLAY -->
+<div class="overlay power-overlay" id="powerOverlay">
+  <div class="po-eye">⭐ Secret Winning Combination Revealed ⭐</div>
+  <div class="po-doors">🎙️ + 💼</div>
+  <div class="po-title">Voice + Title = Influence</div>
+  <div class="po-quote">"Has the voice AND the title. Influence inside and outside the organisation. Nobody can ignore this person."</div>
+  <div class="po-bonus">+5 BONUS POINTS</div>
+</div>
+
+<!-- SOLD TOAST -->
+<div class="sold-toast" id="soldToast">
+  <div class="sold-word">SOLD!</div>
+  <div class="sold-line" id="soldLine">A team bought a door.</div>
+</div>
+
+<!-- TOP BAR -->
+<div class="top">
+  <div class="brand">THE DOOR <span>AUCTION</span></div>
+  <div id="activeDoorLabel" style="font-size:.82rem;font-weight:700;color:rgba(255,255,255,.7)">Waiting for teacher…</div>
+  <div class="top-right">
+    <span class="round-badge" id="roundBadge">Round 0</span>
+  </div>
+</div>
+
+<!-- LARGE ALWAYS-VISIBLE TIMER BAR -->
+<div id="timerBar" style="
+  background:linear-gradient(135deg,#071421,#132B46);
+  border-bottom:2px solid rgba(201,154,59,.4);
+  display:flex;align-items:center;justify-content:center;
+  gap:20px;padding:8px 24px;flex-shrink:0;
+  min-height:72px;position:relative;
+">
+  <!-- Circular countdown ring -->
+  <div style="position:relative;width:56px;height:56px;flex-shrink:0">
+    <svg width="56" height="56" style="transform:rotate(-90deg)">
+      <circle cx="28" cy="28" r="24" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="5"/>
+      <circle id="timerRingCircle" cx="28" cy="28" r="24" fill="none" 
+        stroke="#C99A3B" stroke-width="5"
+        stroke-dasharray="150.8" stroke-dashoffset="0"
+        style="transition:stroke-dashoffset .9s linear,stroke .3s"/>
+    </svg>
+    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">
+      <svg id="timerIcon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+      </svg>
+    </div>
+  </div>
+  <!-- Big digits -->
+  <div style="text-align:center">
+    <div id="timerLbl" style="font-size:.62rem;font-weight:900;letter-spacing:3px;color:rgba(255,255,255,.5);text-transform:uppercase;margin-bottom:2px">Timer</div>
+    <div id="timerDigits" style="font-family:'Bebas Neue';font-size:3.8rem;color:white;letter-spacing:4px;line-height:1;transition:color .3s;min-width:160px;text-align:center">--:--</div>
+  </div>
+  <!-- Mode label -->
+  <div id="timerModeLabel" style="font-size:.78rem;font-weight:800;color:rgba(255,255,255,.45);letter-spacing:2px;text-transform:uppercase;max-width:120px;text-align:left;line-height:1.4"></div>
+</div>
+
+<!-- LARGE FLOATING SPEAKING TIMER (overlay during speak) -->
+<div class="float-speak-timer" id="floatSpeakTimer">
+  <div class="float-speak-label">Speaking Timer</div>
+  <div class="float-speak-digits" id="floatSpeakDigits">00:00</div>
+  <div class="float-speak-help">Speak now — everyone can see the time</div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- DOORS + STORY PANEL -->
+  <div>
+    <div class="doors-row" id="doorsRow"></div>
+    <div style="margin-top:10px">
+      <div class="story-panel" id="storyPanel">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start" id="storyInner">
+          <div>
+            <div class="sp-header">
+              <div class="sp-icon" id="spIcon"></div>
+              <div>
+                <div class="sp-name" id="spName"></div>
+                <div class="sp-price" id="spPrice"></div>
+              </div>
+            </div>
+            <div class="sp-text" id="spText"></div>
+          </div>
+          <!-- Challenge question shown here when a team is speaking -->
+          <div id="spChallengeCol" style="display:none;border-left:2px solid var(--gold,#C99A3B);padding-left:16px">
+            <div style="font-size:.62rem;font-weight:900;letter-spacing:2px;color:var(--teal,#0E6B72);text-transform:uppercase;margin-bottom:8px">Public Challenge</div>
+            <div id="spClaimedTeam" style="font-size:1rem;font-weight:900;margin-bottom:8px"></div>
+            <div id="spChallengeQ" style="font-size:1.05rem;font-weight:700;line-height:1.6;color:#0B1A2B;background:rgba(201,154,59,.08);border-radius:10px;padding:12px 14px;border:1px solid rgba(201,154,59,.3)"></div>
+            <div style="margin-top:10px;font-size:.68rem;font-weight:800;color:#065F46">Give TWO reasons • Use connectors for bonus</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STUDENT LIVE ACTION BAR + PEER REACTIONS -->
+  <div id="studentBar" style="display:none;padding:10px 16px;border-radius:12px;
+    margin-bottom:0;border:2px solid #C4B5FD;background:#f5f0ff;animation:fadeIn .3s ease">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <div id="sbTeamBadge" style="font-size:1rem;font-weight:800"></div>
+      <div id="sbLevel" style="padding:3px 12px;border-radius:999px;font-size:.72rem;font-weight:800"></div>
+      <div id="sbQuestion" style="font-size:1.1rem;font-weight:600;color:#1A0A2E;flex:1;line-height:1.5"></div>
+      <div id="sbDone" style="display:none;padding:4px 14px;border-radius:999px;
+        background:#ECFDF5;color:#065F46;font-size:.75rem;font-weight:800;border:1.5px solid #6EE7B7">✓ Done Speaking</div>
+      <!-- Peer reactions appear here -->
+      <div id="peerReactDisplay" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"></div>
+    </div>
+  </div>
+
+  <!-- TEAMS ROW -->
+  <div class="teams-row" id="teamsRow"></div>
+</div>
+
+<!-- QR OVERLAY (fullscreen) -->
+<div id="qrScreenOverlay" onclick="toggleScreenQR()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:20px">
+  <canvas id="qrScreenLarge" width="340" height="340" style="border-radius:16px;border:6px solid white"></canvas>
+  <div style="color:white;font-size:1.1rem;font-weight:800;letter-spacing:3px">SCAN TO JOIN THE GAME</div>
+  <div style="color:rgba(255,255,255,.6);font-size:.85rem">Tap anywhere to close</div>
+</div>
+
+<!-- SIG BAR -->
+<div class="sig-bar" style="justify-content:space-between">
+  <div style="display:flex;align-items:center;gap:14px">
+    <span class="sig">Nashwa Soliman</span>
+    <span class="sig-title">EFL Educator &amp; Instructional Game Designer</span>
+  </div>
+  <!-- QR mini — tap to enlarge -->
+  <div id="qrMiniWrap" onclick="toggleScreenQR()" style="cursor:pointer;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);border:1px solid rgba(201,154,59,.4);border-radius:10px;padding:5px 10px">
+    <canvas id="qrScreenMini" width="48" height="48" style="border-radius:5px;background:white;display:block"></canvas>
+    <div style="color:rgba(255,255,255,.7);font-size:.6rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase">Tap to<br>Enlarge</div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+<script>
+const DOORS=[
+  {id:1,name:'Content Creator',short:'Creator',price:4,color:'#FF6B00',icon:'🎬',story:'This person makes videos every day. They have 200,000 followers. Companies pay them to show their products. They earn money from home.',cost:'Their private life is public. One mistake can end everything.'},
+  {id:2,name:'Brand Founder',short:'Founder',price:5,color:'#E91E8C',icon:'📦',story:'This person started a product business at home. They send 500 orders every month. They have no boss. They built everything alone.',cost:'They work very long hours. Some months the money is not enough.'},
+  {id:3,name:'The Freelancer',short:'Freelance',price:3,color:'#00897B',icon:'💻',story:'This person works for 5 different companies online. They earn good money every month. They have no office and no boss. They work from anywhere.',cost:'They have no contract. If one company leaves, they lose money immediately.'},
+  {id:4,name:'The Podcaster',short:'Podcaster',price:3,color:'#7C3AED',icon:'🎙️',story:'This person has a podcast about real problems young people have. 50,000 people listen every week. They speak at events and conferences.',cost:'Everything they say is public and permanent. One wrong opinion stays forever.'},
+  {id:5,name:'Corporate Pro',short:'Corporate',price:3,color:'#1565C0',icon:'💼',story:'This person works for a big international company. They have a good title and a stable salary. Their family is very proud of them.',cost:'They work for someone else\'s dream. Their salary will not grow beyond a limit.'},
+  {id:6,name:'The AI Expert',short:'AI Expert',price:4,color:'#0277BD',icon:'🤖',story:'This person learned AI tools for 6 months. Now they work for clients in different countries. They earn in dollars. They never leave home.',cost:'Nobody around them understands their work. They feel alone.'},
+  {id:7,name:'Wellness Coach',short:'Wellness',price:3,color:'#2E7D32',icon:'💪',story:'This person teaches fitness and healthy habits online. They have 80,000 followers. Companies send them free products. They love their work.',cost:'Their body is their brand. One injury or one bad photo can hurt their business.'},
+  {id:8,name:'The Creative',short:'Creative',price:2,color:'#F57F17',icon:'🎨',story:'This person styles people and creates visual designs for brands. They charge high prices per session. They are always fully booked.',cost:'Many people do not think this is a serious job. They must prove themselves every time.'}
+];
+const ROUNDS=['Round 0 — Pre-Game','Round 1 — Explore','Round 2 — Door Market','Round 3 — Defend','Round 4 — Hidden Costs','Round 5 — Power Combination','Round 6 — Writing'];
+const CH='doorauction2025';
+
+let G=null,prevCosts=[],prevRound=-1,lastSA=null,prevSaleId=null;
+
+
+/* ── SUPABASE REALTIME SYNC ── */
+const SUPABASE_URL='https://tggontgfrddojbbggavl.supabase.co';
+const SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnZ29udGdmcmRkb2piYmdnYXZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMDExMzAsImV4cCI6MjA5NTU3NzEzMH0.SsyIIDRLsoas9kAK4biBq5H44-78iTcdjs3wHjXpxOQ';
+const SYNC_CH='doorauction2025';
+let _ws=null,_wsRef=1,_onState=null,_connected=false,_wsQueue=[],_pushTimer=null,_lastState=null;
+function syncInit(onState){
+  _onState=onState;
+  try{const l=JSON.parse(localStorage.getItem(SYNC_CH)||'null');if(l&&onState)onState(l);}catch(e){}
+  _connect();
+}
+function syncPush(state){
+  _lastState=state;
+  try{localStorage.setItem(SYNC_CH,JSON.stringify(state));}catch(e){}
+  if(_pushTimer)clearTimeout(_pushTimer);
+  _pushTimer=setTimeout(()=>{
+    _wsSend({topic:`realtime:${SYNC_CH}`,event:'broadcast',
+      payload:{type:'broadcast',event:'state',payload:{state}},ref:String(_wsRef++)});
+  },250);
+}
+function _connect(){
+  const url=SUPABASE_URL.replace('https://','wss://')+`/realtime/v1/websocket?apikey=${SUPABASE_ANON}&vsn=1.0.0`;
+  try{_ws=new WebSocket(url);}catch(e){setTimeout(_connect,3000);return;}
+  _ws.onopen=()=>{
+    _connected=true;
+    _wsSend({topic:`realtime:${SYNC_CH}`,event:'phx_join',
+      payload:{config:{broadcast:{self:false}}},ref:String(_wsRef++)});
+    _wsQueue.forEach(m=>_ws.send(JSON.stringify(m)));_wsQueue=[];
+    // Screen announces itself — teacher will push state back
+    setTimeout(()=>{
+      _wsSend({topic:`realtime:${SYNC_CH}`,event:'broadcast',
+        payload:{type:'broadcast',event:'hello',payload:{role:'screen'}},ref:String(_wsRef++)});
+    },400);
+  };
+  _ws.onmessage=(e)=>{
+    try{
+      const msg=JSON.parse(e.data);
+      if(msg.event==='broadcast'&&msg.payload){
+        const ev=msg.payload.event,pl=msg.payload.payload||{};
+        if(ev==='state'&&pl.state&&_onState){
+          try{localStorage.setItem(SYNC_CH,JSON.stringify(pl.state));}catch(err){}
+          _onState(pl.state);
+        }
+        // Only teacher responds to request_state
+      }
+    }catch(err){}
+  };
+  _ws.onclose=()=>{_connected=false;setTimeout(_connect,2000);};
+  _ws.onerror=()=>{};
+}
+function _wsSend(msg){
+  if(_connected&&_ws&&_ws.readyState===WebSocket.OPEN)_ws.send(JSON.stringify(msg));
+  else _wsQueue.push(msg);
+}
+/* ── END SYNC ── */
+
+// Generate QR codes
+function generateScreenQR(){
+  const url='https://career-city-811d01.netlify.app/student.html'+(G&&G.room?'?room='+G.room:'');
+  const mini=document.getElementById('qrScreenMini');
+  const large=document.getElementById('qrScreenLarge');
+  if(typeof QRious!=='undefined'){
+    if(mini)new QRious({element:mini,value:url,size:48,background:'#ffffff',foreground:'#071421'});
+    if(large)new QRious({element:large,value:url,size:340,background:'#ffffff',foreground:'#071421'});
+  }
+}
+function toggleScreenQR(){
+  const ov=document.getElementById('qrScreenOverlay');if(!ov)return;
+  ov.style.display=ov.style.display==='flex'?'none':'flex';
+}
+
+// Cross-device sync
+syncInit((state)=>{
+  if(state){G=state;render();checkStudentAction(state);generateScreenQR();}
+});
+// Same-device fallback
+setInterval(()=>{
+  try{const s=JSON.parse(localStorage.getItem(CH)||'null');if(s){G=s;render();checkStudentAction(s);}}catch(e){}
+},2000);
+
+function checkStudentAction(s){
+  if(!s.studentAction)return;
+  const sa=s.studentAction;
+  const key=sa.teamName+sa.question+sa.done;
+  if(key===lastSA)return;
+  lastSA=key;
+  const bar=document.getElementById('studentBar');
+  const badge=document.getElementById('sbTeamBadge');
+  const lv=document.getElementById('sbLevel');
+  const q=document.getElementById('sbQuestion');
+  const done=document.getElementById('sbDone');
+  if(!bar)return;
+  bar.style.display='block';
+  if(sa.done){
+    bar.style.borderColor='#6EE7B7';bar.style.background='#ECFDF5';
+    if(badge)badge.innerHTML=`<span style="color:${sa.teamColor}">${sa.teamName}</span>`;
+    if(lv)lv.style.display='none';
+    if(q)q.textContent=sa.question;
+    if(done)done.style.display='block';
+  } else {
+    bar.style.borderColor='#C4B5FD';bar.style.background='#f5f0ff';
+    if(badge)badge.innerHTML=`<span style="color:${sa.teamColor}">${sa.teamName}</span>`;
+    if(lv){lv.style.display='block';lv.style.background='#E9D5FF';lv.style.color='#5B21B6';lv.textContent=sa.level;}
+    if(q)q.textContent=sa.question;
+    if(done)done.style.display='none';
+  }
+}
+
+
+const DOOR_DISPLAY=[
+  {title:'Creator Studio',sub:'Content Creator Path'},
+  {title:'Startup Shop',sub:'Young Founder Path'},
+  {title:'Remote Hub',sub:'Freelance Path'},
+  {title:'Voice Studio',sub:'Podcaster Path'},
+  {title:'Corporate Tower',sub:'Corporate Professional Path'},
+  {title:'AI Lab',sub:'AI Expert Path'},
+  {title:'Wellness Studio',sub:'Wellness Coach Path'},
+  {title:'Design Studio',sub:'Creative Designer Path'}
+];
+function doorAsset(i){return `assets/door${i+1}.png`;}
+function doorTitle(i){return DOOR_DISPLAY[i]?.title || DOORS[i]?.name || '';}
+function doorSub(i){return DOOR_DISPLAY[i]?.sub || '';}
+function render(){
+  if(!G)return;
+  renderDoors();renderTeams();renderTimer();renderRound();checkHC();checkPower();checkSale();
+  renderClaimStatus();renderPeerReactions();
+}
+
+function renderClaimStatus(){
+  if(!G)return;
+  const col=document.getElementById('spChallengeCol');
+  const teamEl=document.getElementById('spClaimedTeam');
+  const qEl=document.getElementById('spChallengeQ');
+  if(!col)return;
+  if(G.claimedBy!==null&&G.claimedBy!==undefined&&G.activeDoor!==null&&G.activeDoor!==undefined&&G.teams){
+    const t=G.teams[G.claimedBy];
+    const d=DOORS[G.activeDoor];
+    if(!t||!d){col.style.display='none';return;}
+    col.style.display='block';
+    if(teamEl)teamEl.innerHTML=`<span style="color:${t.color}">${t.name}</span> is challenging`;
+    const cq=d.q?d.q.find(([lv])=>lv==='challenge'):null;
+    if(qEl)qEl.textContent=`Your team wants to buy the ${d.name} door. Give at least two different reasons why this is a smart choice for your future.`;
+  } else {
+    col.style.display='none';
+  }
+}
+
+let _lastReactionTs=0;
+function renderPeerReactions(){
+  if(!G||!G.peerReaction)return;
+  const r=G.peerReaction;
+  if(r.ts===_lastReactionTs)return;
+  _lastReactionTs=r.ts;
+  const el=document.getElementById('peerReactDisplay');
+  if(!el)return;
+  const badge=document.createElement('div');
+  badge.style.cssText=`padding:3px 10px;border-radius:999px;background:${r.teamColor};color:white;font-size:.72rem;font-weight:800;animation:fadeIn .3s ease`;
+  badge.textContent=`👍 ${r.teamName}`;
+  el.appendChild(badge);
+  const bar=document.getElementById('studentBar');
+  if(bar)bar.style.display='block';
+  setTimeout(()=>badge.remove(),8000);
+}
+
+function renderDoors(){
+  const el=document.getElementById('doorsRow');if(!el)return;
+  el.innerHTML=DOORS.map((d,i)=>{
+    const owners=G.teams?G.teams.filter(t=>t.doors.includes(i)):[];
+    const act=G.activeDoor===i;
+    return `<div class="dc card-mode ${act?'active':''} ${owners.length?'owned':''}" style="--dc-col:${d.color}">
+      <div class="career-card-wrap">
+        <img class="career-card-img" src="${doorAsset(i)}" alt="${doorTitle(i)}">
+        <div class="dc-owners">
+          ${owners.map(o=>`<span class="ot">${o.name.replace('The ','')}</span>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const panel=document.getElementById('storyPanel');
+  const lbl=document.getElementById('activeDoorLabel');
+  if(G.activeDoor!==null){
+    const d=DOORS[G.activeDoor];
+    document.getElementById('spIcon').innerHTML=`<img class="door-visual-large" src="${doorAsset(G.activeDoor)}" alt="${doorTitle(G.activeDoor)}">`;
+    document.getElementById('spName').textContent=doorTitle(G.activeDoor);
+    document.getElementById('spPrice').innerHTML=`<span style="color:var(--gold);font-weight:900">${d.price} coins • ${doorSub(G.activeDoor)}</span>`;
+    document.getElementById('spText').textContent=d.story;
+    panel.style.borderColor='var(--gold)';
+    panel.classList.add('show');
+    if(lbl){lbl.textContent=`Active: ${doorTitle(G.activeDoor)} — ${d.price} coins`;lbl.style.color='#E5C16B';}
+  } else {
+    panel.classList.remove('show');
+    if(lbl){lbl.textContent='Waiting for teacher to open a door…';lbl.style.color='rgba(255,255,255,.58)';}
+  }
+}
+
+function renderTeams(){
+  const el=document.getElementById('teamsRow');if(!el||!G.teams)return;
+  const mx=Math.max(...G.teams.map(t=>t.score));
+  el.innerHTML=G.teams.map((t,i)=>{
+    const lead=t.score===mx&&t.score>0;
+    const dots=Array.from({length:t.teamSize||4},(_,di)=>
+      `<div class="sdot" style="background:${di<(t.spoke||0)?t.color:'rgba(0,0,0,.08)'};
+        ${di<(t.spoke||0)?'box-shadow:0 0 5px '+t.color:''};width:11px;height:11px;border-radius:50%"></div>`
+    ).join('');
+    const chips=(t.doors||[]).map(di=>
+      `<span class="door-chip" style="background:${DOORS[di]?DOORS[di].color:'#888'}">${DOORS[di]?doorTitle(di):''}</span>`
+    ).join('');
+    return `<div class="tc ${lead?'lead':''}" style="--tc-col:${t.color}">
+      ${lead?'<div class="crown">👑</div>':''}
+      <div class="tc-top" style="background:${t.color}"></div>
+      <div class="tc-body">
+        <div class="tc-name" style="color:${t.color}">${t.name}</div>
+        <div class="tc-score">${t.score}</div>
+        <div class="tc-pts">POINTS</div>
+        <div class="tc-meta"><span>🪙 ${t.coins}</span><span>${(t.doors||[]).length} doors</span></div>
+        <div class="spoke-section">
+          <div class="spoke-lbl">Students Spoke</div>
+          <div class="spoke-count" style="color:${t.color}">${t.spoke||0}<span style="font-size:.9rem;color:var(--muted)">/${t.teamSize||4}</span></div>
+          <div class="spoke-dots">${dots}</div>
+        </div>
+        ${chips?`<div class="doors-owned">${chips}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderTimer(){
+  const el=document.getElementById('timerDigits');
+  const lbl=document.getElementById('timerLbl');
+  const modeEl=document.getElementById('timerModeLabel');
+  const floatBar=document.getElementById('floatSpeakTimer');
+  const floatDigits=document.getElementById('floatSpeakDigits');
+  const floatLabel=floatBar?floatBar.querySelector('.float-speak-label'):null;
+  const floatHelp=floatBar?floatBar.querySelector('.float-speak-help'):null;
+  if(!el)return;
+
+  function setTimerColor(s, isSpeaking){
+    const col = s<=5?'#F87171':s<=15?'#FCD34D':isSpeaking?'#FF6B00':'#C99A3B';
+    el.style.color=col;
+    updateRing(col);
+  }
+
+  // Student speaking timer takes priority
+  const st=G.speakingTimer;
+  if(st&&st.running&&st.left>0){
+    const s=st.left;
+    const timeText=fmt(s);
+    el.textContent=timeText;
+    if(lbl)lbl.textContent='SPEAKING';
+    if(modeEl)modeEl.textContent=(st.teamName||'Student')+' Speaking Now';
+    setTimerColor(s, true);
+    updateRingProgress(s, st.base||45, s<=5?'#F87171':s<=15?'#FCD34D':'#FF6B00');
+    if(floatDigits)floatDigits.textContent=timeText;
+    if(floatLabel)floatLabel.textContent=(st.teamName||'Student')+' Speaking';
+    if(floatHelp)floatHelp.textContent='Speak now — everyone can see the time';
+    if(floatBar)floatBar.className='float-speak-timer show'+(s<=5?' danger':s<=15?' warn':'');
+    return;
+  }
+  if(floatBar)floatBar.className='float-speak-timer';
+
+  if(!G.timerMode||G.timerLeft===undefined){
+    el.textContent='--:--';el.style.color='rgba(255,255,255,.35)';
+    if(lbl)lbl.textContent='Timer';
+    if(modeEl)modeEl.textContent='';
+    updateRingProgress(1,1,'rgba(255,255,255,.15)');
+    return;
+  }
+
+  const s=G.timerLeft;
+  const MODES={prep:{label:'TEAM PREP',mode:'Preparation',base:120},s30:{label:'SPEAKING',mode:'Speaking 30s',base:30},s45:{label:'SPEAKING',mode:'Speaking 45s',base:45}};
+  const m=MODES[G.timerMode]||{label:'Timer',mode:'',base:45};
+  el.textContent=fmt(s);
+  if(lbl)lbl.textContent=m.label;
+  if(modeEl)modeEl.textContent=m.mode;
+  const col=s<=5?'#F87171':s<=15?'#FCD34D':G.timerMode==='prep'?'#C99A3B':'#FF6B00';
+  el.style.color=col;
+  updateRingProgress(s, m.base, col);
+  const isSpeaking=(G.timerMode==='s30'||G.timerMode==='s45')&&G.timerRunning;
+  if(floatBar&&floatDigits){
+    floatDigits.textContent=fmt(s);
+    if(floatLabel)floatLabel.textContent='Speaking Timer';
+    if(floatHelp)floatHelp.textContent='Speak now — everyone can see the time';
+    floatBar.className='float-speak-timer'+(isSpeaking?' show':'')+(s<=5?' danger':s<=15?' warn':'');
+  }
+}
+
+function fmt(s){
+  return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+}
+
+function updateRingProgress(left, base, color){
+  const circle=document.getElementById('timerRingCircle');
+  if(!circle)return;
+  const circumference=150.8;
+  const prog=base>0?Math.max(0,Math.min(1,left/base)):1;
+  circle.style.strokeDashoffset=circumference*(1-prog);
+  circle.style.stroke=color;
+}
+
+function updateRing(col){
+  const circle=document.getElementById('timerRingCircle');
+  if(circle)circle.style.stroke=col;
+}
+
+function updateSand(){}// kept for compatibility
+
+
+
+function renderRound(){
+  const el=document.getElementById('roundBadge');
+  if(el&&G.round!=null)el.textContent=ROUNDS[G.round]||'Round '+G.round;
+}
+
+function checkHC(){
+  if(!G.revealedCosts)return;
+  const newC=G.revealedCosts.filter(i=>!prevCosts.includes(i));
+  if(newC.length>0){showHC(newC[newC.length-1]);prevCosts=[...G.revealedCosts];}
+}
+
+function showHC(i){
+  const d=DOORS[i];
+  const owners=G.teams?G.teams.filter(t=>t.doors.includes(i)):[];
+  document.getElementById('hcoIcon').textContent=d.icon;
+  document.getElementById('hcoName').textContent=d.name;
+  document.getElementById('hcoCost').textContent=d.cost;
+  document.getElementById('hcoOwn').textContent=owners.length?'Owned by: '+owners.map(o=>o.name).join(', '):'No team owns this door.';
+  const ov=document.getElementById('hcOverlay');
+  ov.classList.add('show');
+  setTimeout(()=>ov.classList.remove('show'),14000);
+}
+
+function checkSale(){
+  if(!G||!G.lastSale||!G.lastSale.id||G.lastSale.id===prevSaleId)return;
+  prevSaleId=G.lastSale.id;
+  const toast=document.getElementById('soldToast');
+  const line=document.getElementById('soldLine');
+  if(line)line.textContent=`${G.lastSale.teamName} bought ${G.lastSale.doorIcon} ${G.lastSale.doorName} for ${G.lastSale.price} coins`;
+  if(toast){toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),4200);}
+}
+
+function checkPower(){
+  if(!G||G.round===undefined)return;
+  if(G.round>=5&&prevRound<5){
+    prevRound=G.round;
+    const po=document.getElementById('powerOverlay');
+    po.classList.add('show');
+    setTimeout(()=>po.classList.remove('show'),12000);
+  }
+  prevRound=G.round;
+}
+</script>
+
+
+
+<style id="screen-final-fixes">
+/* Timer — large and below the top bar, not overlapping */
+.float-speak-timer{
+  display:flex!important;
+  opacity:0;
+  top:58px!important;
+  left:50%!important;
+  transform:translateX(-50%) translateY(0)!important;
+  width:min(860px,calc(100vw - 36px))!important;
+  padding:16px 28px!important;
+  border-radius:0 0 24px 24px!important;
+  z-index:200!important;
+  transition:.3s ease!important;
+}
+.float-speak-timer.show{
+  opacity:1!important;
+}
+.float-speak-digits{font-size:5.5rem!important;min-width:180px!important;}
+.float-speak-label{font-size:.95rem!important;}
+.float-speak-help{font-size:1rem!important;}
+
+/* Story panel grid — single col when no challenge, two col when claimed */
+#storyInner{
+  grid-template-columns: 1fr!important;
+}
+#storyInner:has(#spChallengeCol[style*="block"]){
+  grid-template-columns: 1fr 1fr!important;
+}
+
+/* Main layout — push content below potential timer */
+.main{
+  padding-top:14px!important;
+}
+</style>
+</body>
+</html>
+
+

@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>The Door Auction — Teacher</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Bebas+Neue&family=Playfair+Display:ital,wght@1,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FFF8F0;--white:#FFFFFF;--dark:#1A0A2E;--muted:#888;--border:#E8DDD5;
+  --d1:#FF6B00;--d2:#E91E8C;--d3:#00897B;--d4:#7C3AED;
+  --d5:#1565C0;--d6:#0277BD;--d7:#2E7D32;--d8:#F57F17;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--dark);overflow:hidden}
+button,input,select{font-family:inherit}
+.screen{display:none;height:100vh;flex-direction:column;overflow:hidden}
+.screen.active{display:flex}
+
+/* BUTTONS */
+.btn{border:1.5px solid var(--border);border-radius:10px;background:white;color:var(--dark);
+  padding:8px 14px;font-weight:700;cursor:pointer;transition:.15s;font-size:.82rem}
+.btn:hover{border-color:var(--dark);transform:translateY(-1px)}
+.btn.primary{background:var(--dark);color:white;border-color:var(--dark)}
+.btn.primary:hover{background:#2d1a4e}
+.btn.sm{font-size:.72rem;padding:5px 10px}
+.btn.xs{font-size:.65rem;padding:3px 7px}
+
+/* TOP BAR */
+.top{height:52px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px;background:var(--dark);color:white;flex-shrink:0;gap:8px}
+.top-title{font-family:'Bebas Neue';letter-spacing:4px;font-size:1.4rem;color:white}
+.top-title span{color:#C084FC}
+.top-nav{display:flex;gap:6px;align-items:center}
+.pill{padding:4px 12px;border-radius:999px;font-size:.68rem;font-weight:800;
+  background:rgba(255,255,255,.15);color:white}
+
+/* STEP BAR */
+.step-bar{display:flex;align-items:center;padding:8px 16px;gap:0;
+  background:white;border-bottom:1.5px solid var(--border);flex-shrink:0;overflow-x:auto}
+.step-item{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;
+  font-size:.62rem;font-weight:700;color:var(--muted);white-space:nowrap;cursor:pointer;transition:.2s}
+.step-item:hover{background:#f5f0ff;color:var(--dark)}
+.step-item.active{background:#f0e8ff;color:#7C3AED;font-weight:800}
+.step-item.done{color:#2E7D32}
+.step-num{width:16px;height:16px;border-radius:50%;background:#eee;
+  display:flex;align-items:center;justify-content:center;font-size:.55rem;font-weight:900}
+.step-item.active .step-num{background:#7C3AED;color:white}
+.step-item.done .step-num{background:#2E7D32;color:white}
+.step-arrow{color:var(--border);font-size:.6rem;margin:0 1px}
+
+/* PANEL */
+.panel{background:white;border:1.5px solid var(--border);border-radius:14px;padding:14px}
+.pt{font-size:.62rem;text-transform:uppercase;letter-spacing:2px;color:var(--muted);
+  font-weight:800;margin-bottom:10px;display:flex;align-items:center;gap:7px}
+.pt::before{content:"";width:14px;height:2px;background:var(--dark);opacity:.2}
+
+/* MAIN LAYOUT */
+.main{display:grid;grid-template-columns:1fr 300px;gap:12px;padding:12px;
+  height:calc(100vh - 52px - 42px);min-height:0}
+.left{display:grid;grid-template-rows:auto 1fr;gap:12px;min-height:0;overflow:hidden}
+.right{display:flex;flex-direction:column;gap:10px;overflow-y:auto}
+
+/* DOOR TRACK */
+.door-track{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}
+.dc{border-radius:10px;border:2px solid transparent;padding:8px 6px;
+  display:flex;flex-direction:column;align-items:center;text-align:center;
+  cursor:pointer;position:relative;overflow:hidden;transition:.2s;
+  background:white;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.dc:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,.12)}
+.dc.active{border-color:var(--dc-col);box-shadow:0 4px 20px rgba(0,0,0,.15);transform:translateY(-3px)}
+.dc.owned{opacity:.75}
+.dc::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:var(--dc-col)}
+.dc-num{font-size:.55rem;font-weight:900;color:var(--dc-col);position:absolute;top:6px;left:6px}
+.dc-price{font-family:'Bebas Neue';font-size:1rem;color:var(--dc-col);position:absolute;top:5px;right:6px}
+.dc-door-shape{width:42px;height:56px;border-radius:12px 12px 4px 4px;
+  margin:14px auto 3px;position:relative;border:2.5px solid var(--dc-col);
+  background:color-mix(in srgb,var(--dc-col) 10%,white)}
+.dc-door-knob{width:6px;height:6px;border-radius:50%;background:var(--dc-col);
+  position:absolute;right:5px;top:52%;transform:translateY(-50%)}
+.dc-icon{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:.95rem}
+.dc-name{font-size:.68rem;font-weight:800;line-height:1.2;margin-top:2px;color:var(--dark)}
+.dc-owners{display:flex;gap:2px;justify-content:center;flex-wrap:wrap;min-height:12px;margin-top:2px}
+.ot{font-size:.48rem;font-weight:900;padding:1px 4px;border-radius:999px;color:white}
+.dc-open-btn{width:100%;font-size:.58rem;padding:4px;margin-top:4px;border-radius:6px;
+  border:1.5px solid var(--dc-col);background:color-mix(in srgb,var(--dc-col) 8%,white);
+  color:var(--dc-col);cursor:pointer;font-weight:800;transition:.15s}
+.dc-open-btn:hover{background:color-mix(in srgb,var(--dc-col) 15%,white)}
+.dc-open-btn.is-active{background:var(--dc-col);color:white}
+
+/* ROUND INSTRUCTIONS */
+.round-instruction{padding:8px 12px;border-radius:8px;font-size:.8rem;
+  color:var(--dark);line-height:1.5;margin-top:8px;
+  background:#f5f0ff;border-left:3px solid #7C3AED;display:none}
+.round-instruction.show{display:block}
+
+/* TEAMS */
+.teams-panel{overflow-y:auto;min-height:0}
+.tg{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;height:100%}
+.tc{background:white;border:1.5px solid var(--border);border-radius:12px;
+  overflow:hidden;display:flex;flex-direction:column;transition:.2s;position:relative}
+.tc.lead{border-color:var(--tc-col);border-width:2.5px;
+  box-shadow:0 4px 16px rgba(0,0,0,.1)}
+.tc-top{height:5px;width:100%}
+.tc-body{padding:10px;flex:1;display:flex;flex-direction:column;gap:3px}
+.tc-name{font-size:.75rem;font-weight:800;letter-spacing:.3px}
+.tc-score{font-family:'Bebas Neue';font-size:2.8rem;line-height:1;color:var(--dark)}
+.tc-pts{font-size:.6rem;color:var(--muted);letter-spacing:1px}
+.tc-meta{display:flex;justify-content:space-between;font-size:.68rem;color:#666;margin-top:2px}
+.spoke-lbl{font-size:.55rem;font-weight:800;letter-spacing:1.5px;color:var(--muted);
+  text-transform:uppercase;margin-top:4px;margin-bottom:3px}
+.spoke-row{display:flex;align-items:center;justify-content:space-between}
+.spoke-count{font-family:'Bebas Neue';font-size:1.4rem;line-height:1}
+.spoke-btns{display:flex;gap:3px}
+.s-add{width:22px;height:22px;border-radius:6px;border:1.5px solid;
+  background:color-mix(in srgb,var(--tc-col) 10%,white);color:var(--tc-col);
+  font-size:.85rem;cursor:pointer;font-weight:800;transition:.15s;
+  display:flex;align-items:center;justify-content:center}
+.s-add:hover{background:color-mix(in srgb,var(--tc-col) 20%,white)}
+.s-rst{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--border);
+  background:white;color:var(--muted);font-size:.7rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center}
+.spoke-dots{display:flex;gap:3px;flex-wrap:wrap;margin-top:3px}
+.sdot{width:9px;height:9px;border-radius:50%;transition:.2s}
+.bd{display:none}
+.bdi{font-size:.55rem;color:#666;background:#f8f8f8;padding:2px 5px;border-radius:4px}
+.tc-btns{display:flex;gap:2px;flex-wrap:wrap;margin-top:4px;padding:0 2px 6px}
+.tc-btns .btn{padding:3px 6px;font-size:.58rem;flex:1}
+
+/* COIN FLY */
+@keyframes coinFly{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-40px) scale(1.3)}}
+.coin-fly{position:fixed;pointer-events:none;font-family:'Bebas Neue';font-size:1.2rem;
+  color:#E91E8C;z-index:999;animation:coinFly .8s ease-out forwards;font-weight:900}
+
+
+/* LARGE FLOATING SPEAKING TIMER — shown only while speaking timer is running */
+.float-speak-timer{position:fixed;top:58px;left:50%;transform:translateX(-50%) translateY(-120%);
+  width:min(640px,calc(100vw - 340px));z-index:150;padding:10px 18px;border-radius:0 0 18px 18px;
+  background:linear-gradient(135deg,#FF6B00,#F59E0B);color:white;box-shadow:0 12px 36px rgba(26,10,46,.28);
+  border:2px solid rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;gap:16px;
+  pointer-events:none;opacity:0;transition:.25s ease}
+.float-speak-timer.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.float-speak-label{font-size:.68rem;font-weight:900;letter-spacing:2.5px;text-transform:uppercase;opacity:.9}
+.float-speak-digits{font-family:'Bebas Neue';font-size:4rem;line-height:.9;letter-spacing:3px;min-width:120px;text-align:center}
+.float-speak-help{font-size:.78rem;font-weight:800;opacity:.9}
+.float-speak-timer.warn{background:linear-gradient(135deg,#D97706,#FBBF24)}
+.float-speak-timer.danger{background:linear-gradient(135deg,#DC2626,#F87171);animation:floatBlink .5s infinite}
+@keyframes floatBlink{50%{filter:brightness(1.18)}}
+@media(max-width:900px){.float-speak-timer{width:min(620px,calc(100vw - 24px))}}
+
+/* RIGHT PANEL */
+.timer-modes{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:10px}
+.tm-btn{padding:8px 5px;border-radius:10px;border:2px solid var(--border);
+  background:white;color:var(--muted);cursor:pointer;font-size:.65rem;font-weight:800;
+  text-align:center;text-transform:uppercase;transition:.2s;line-height:1.4}
+.tm-btn:hover{border-color:var(--dark);color:var(--dark)}
+.tm-btn.am-prep{border-color:#7C3AED;color:#7C3AED;background:#f5f0ff}
+.tm-btn.am-spk{border-color:#FF6B00;color:#FF6B00;background:#fff5ee}
+
+/* SAND CLOCK SMALL */
+.sand-wrap-sm{display:flex;align-items:center;gap:10px;justify-content:center;padding:6px 0}
+.sand-sm{width:32px;height:40px;flex-shrink:0}
+.t-digits{font-family:'Bebas Neue';font-size:3.8rem;line-height:1;text-align:center;transition:color .3s;color:var(--dark)}
+.t-digits.warn{color:#D97706}
+.t-digits.danger{color:#DC2626;animation:bl .5s infinite}
+@keyframes bl{50%{opacity:.4}}
+.t-lbl{font-size:.58rem;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:3px;text-align:center}
+.t-btns{display:flex;gap:5px;justify-content:center;margin-top:6px}
+
+.rg{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.rb{padding:7px 8px;border-radius:9px;border:1.5px solid var(--border);
+  background:white;color:var(--muted);cursor:pointer;font-size:.68rem;font-weight:700;text-align:left;transition:.2s}
+.rb:hover{border-color:var(--dark);color:var(--dark)}
+.rb.ar{border-color:#7C3AED;color:#7C3AED;background:#f5f0ff;font-weight:800}
+
+.ql{display:flex;flex-direction:column;gap:5px}
+.qi{display:flex;gap:7px;align-items:flex-start;background:#fafafa;
+  border:1.5px solid var(--border);border-radius:9px;padding:8px}
+.ql-lv{white-space:nowrap;border-radius:999px;padding:2px 7px;font-size:.6rem;font-weight:900;flex-shrink:0;margin-top:1px}
+.ql-lv.start{background:#ECFDF5;color:#065F46}
+.ql-lv.build{background:#EFF6FF;color:#1E40AF}
+.ql-lv.challenge{background:#F5F3FF;color:#5B21B6}
+.qi-text{font-size:.82rem;line-height:1.5;color:var(--dark)}
+
+.buy-row{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center}
+select.sel{background:white;border:1.5px solid var(--border);border-radius:9px;
+  color:var(--dark);padding:8px;outline:none;width:100%;font-size:.82rem}
+select.sel:focus{border-color:var(--dark)}
+.score-row{display:flex;gap:3px;flex-wrap:wrap;margin-top:7px}
+.score-row .btn{padding:4px 8px;font-size:.65rem}
+
+.hc-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.hc-btn{padding:6px 8px;border-radius:8px;border:1.5px solid #FCA5A5;
+  background:#FFF5F5;color:#DC2626;cursor:pointer;font-size:.65rem;font-weight:700;transition:.2s}
+.hc-btn:hover{background:#FEE2E2}
+.hc-btn.revealed{opacity:.35;cursor:default}
+
+.log{display:flex;flex-direction:column;gap:3px;max-height:80px;overflow-y:auto}
+.li{font-size:.65rem;color:#666;background:#f8f8f8;padding:4px 6px;border-radius:5px}
+
+/* MODALS */
+.modal{position:fixed;inset:0;background:rgba(26,10,46,.6);backdrop-filter:blur(6px);
+  display:none;align-items:center;justify-content:center;text-align:center;z-index:200;padding:20px}
+.modal.show{display:flex}
+.mc{max-width:500px;width:100%;background:white;border:2px solid var(--border);
+  border-radius:20px;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.15)}
+.mt{font-family:'Bebas Neue';font-size:2rem;color:var(--dark);letter-spacing:4px;margin-bottom:10px}
+.ms{color:#555;font-size:.92rem;line-height:1.7;margin-bottom:18px}
+
+/* PIN */
+#pin{align-items:center;justify-content:center;text-align:center;gap:14px;
+  background:linear-gradient(135deg,#1A0A2E 0%,#2D1B69 100%)}
+.pin-logo{font-family:'Bebas Neue';font-size:clamp(3rem,8vw,5rem);color:white;
+  letter-spacing:6px;line-height:.9;margin-bottom:6px}
+.pin-logo span{color:#C084FC}
+.pin-sub{font-size:.7rem;letter-spacing:3px;color:rgba(255,255,255,.5);
+  text-transform:uppercase;margin-bottom:22px}
+.pin-input{width:180px;padding:15px;border-radius:12px;border:2px solid rgba(255,255,255,.2);
+  background:rgba(255,255,255,.1);color:white;font-family:'Bebas Neue';
+  font-size:2.3rem;text-align:center;letter-spacing:10px;outline:none;transition:.2s}
+.pin-input:focus{border-color:#C084FC}
+.pin-err{color:#F87171;font-size:.78rem;min-height:18px}
+.sig{font-family:'Playfair Display',serif;font-style:italic;color:#C084FC;font-size:1rem;margin-top:6px}
+.sig-title{font-size:.62rem;letter-spacing:2px;color:rgba(255,255,255,.4);
+  text-transform:uppercase;margin-top:3px}
+
+/* SETUP */
+.setup-body{padding:14px;max-width:820px;margin:0 auto;width:100%;overflow-y:auto;flex:1;
+  display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.sr{display:grid;grid-template-columns:12px 1fr auto;gap:8px;align-items:center;
+  background:white;border:1.5px solid var(--border);border-radius:10px;padding:10px}
+.sdot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.si{background:white;border:1.5px solid var(--border);border-radius:8px;color:var(--dark);
+  padding:8px;outline:none;font-weight:800;width:100%;font-size:.9rem}
+.si:focus{border-color:var(--dark)}
+.size-sel{background:white;border:1.5px solid var(--border);border-radius:8px;
+  color:var(--dark);padding:7px;outline:none;font-weight:700;font-size:.8rem;width:58px}
+.big-code{font-family:'Bebas Neue';font-size:3.5rem;color:var(--dark);
+  letter-spacing:8px;text-align:center;margin:8px 0}
+.note{padding:9px 12px;background:#f5f0ff;border-left:3px solid #7C3AED;
+  border-radius:8px;color:#555;font-size:.8rem;line-height:1.6;margin-bottom:8px}
+
+
+/* VISUAL POLISH UPGRADE — keeps the teacher console functional */
+body{background:
+  radial-gradient(circle at 20% 10%,rgba(192,132,252,.18),transparent 27%),
+  radial-gradient(circle at 85% 5%,rgba(255,107,0,.13),transparent 24%),
+  linear-gradient(180deg,#FFF8F0 0%,#FFF3E6 100%)}
+.top{box-shadow:0 8px 24px rgba(26,10,46,.22);border-bottom:2px solid rgba(255,255,255,.08)}
+.panel{box-shadow:0 8px 24px rgba(26,10,46,.06);background:linear-gradient(180deg,#fff 0%,#FFFCF8 100%)}
+.dc{min-height:116px;background:linear-gradient(180deg,#fff 0%,#FFFCF8 100%);box-shadow:0 8px 20px rgba(26,10,46,.08)}
+.dc::after{content:"LOCKED";position:absolute;bottom:33px;left:50%;transform:translateX(-50%);font-size:.43rem;letter-spacing:1.3px;font-weight:900;color:rgba(26,10,46,.25)}
+.dc.active{transform:translateY(-5px) scale(1.025);z-index:4;box-shadow:0 14px 34px rgba(26,10,46,.18),0 0 0 4px color-mix(in srgb,var(--dc-col) 16%,transparent)}
+.dc.active::after{content:"ON SALE";color:white;background:var(--dc-col);padding:2px 7px;border-radius:999px;bottom:33px}
+.dc.owned:not(.active)::after{content:"OWNED";color:var(--dc-col);background:color-mix(in srgb,var(--dc-col) 10%,white);padding:2px 7px;border-radius:999px}
+.dc-door-shape{width:48px;height:62px;box-shadow:inset 0 -8px 0 rgba(255,255,255,.44),0 8px 20px color-mix(in srgb,var(--dc-col) 22%,transparent)}
+.dc.active .dc-door-shape{animation:teacherDoorGlow 1.6s infinite}
+@keyframes teacherDoorGlow{50%{box-shadow:inset 0 -8px 0 rgba(255,255,255,.44),0 0 22px color-mix(in srgb,var(--dc-col) 50%,transparent)}}
+.dc-open-btn.is-active{box-shadow:0 5px 15px color-mix(in srgb,var(--dc-col) 28%,transparent)}
+.tc{background:linear-gradient(180deg,#fff 0%,#FFFCF8 100%);box-shadow:0 6px 16px rgba(26,10,46,.06)}
+.tc.lead{transform:translateY(-3px);box-shadow:0 14px 32px rgba(26,10,46,.13),0 0 0 3px color-mix(in srgb,var(--tc-col) 11%,transparent)}
+.tc-score{text-shadow:0 4px 12px rgba(26,10,46,.10)}
+.tc-meta span{padding:2px 6px;border-radius:999px;background:rgba(255,255,255,.75);border:1px solid rgba(0,0,0,.05);font-weight:800}
+.tm-btn.am-spk{box-shadow:0 8px 20px rgba(255,107,0,.12)}
+.tm-btn.am-prep{box-shadow:0 8px 20px rgba(124,58,237,.12)}
+#studentActionPanel{box-shadow:0 12px 30px rgba(124,58,237,.14)}
+.li:first-child{background:#FFF7ED;color:#9A3412;font-weight:800;border-left:3px solid #FF6B00}
+.sold-flash{position:fixed;left:50%;top:78px;transform:translateX(-50%);z-index:260;background:linear-gradient(135deg,#1A0A2E,#3B166E);color:white;border:2px solid rgba(255,255,255,.25);border-radius:18px;padding:14px 22px;box-shadow:0 18px 50px rgba(26,10,46,.32);font-weight:900;animation:soldFlash 2.2s ease forwards;text-align:center}
+.sold-flash strong{font-family:'Bebas Neue';font-size:2.4rem;letter-spacing:4px;color:#FCD34D;margin-right:10px;vertical-align:middle}
+@keyframes soldFlash{0%{opacity:0;transform:translateX(-50%) translateY(-20px)}15%,75%{opacity:1;transform:translateX(-50%) translateY(0)}100%{opacity:0;transform:translateX(-50%) translateY(-20px)}}
+
+
+
+/* ===== PREMIUM HIGHER-EDUCATION SIMULATION THEME ===== */
+:root{
+  --bg:#F4EFE5;--white:#fff;--dark:#0B1A2B;--navy:#0B1A2B;--navy2:#132B46;
+  --ivory:#F7F0E3;--gold:#C99A3B;--gold2:#E5C16B;--teal:#0E6B72;
+  --border:#D6C6A8;--muted:#7B7569;--burgundy:#5C1426;--forest:#123A2D;
+}
+html,body{background:radial-gradient(circle at 50% 0%,#FFF8EA 0%,#F4EFE5 44%,#E7DAC4 100%);color:var(--navy)}
+.top{background:linear-gradient(135deg,#071421,#132B46);border-bottom:1px solid rgba(201,154,59,.45);box-shadow:0 8px 24px rgba(11,26,43,.18)}
+.brand,.top-title{font-family:Georgia,'Times New Roman',serif!important;font-weight:800;letter-spacing:2px!important;color:#F8F0DD!important}.brand span,.top-title span{color:var(--gold2)!important}
+.round-badge,.pill{background:rgba(247,240,227,.1)!important;border:1px solid rgba(229,193,107,.38)!important;color:#F7F0E3!important}
+.panel,.story-panel,.tc,.dc,.student-card,.sd,.explore-card,.q-btn{border-color:var(--border)!important;box-shadow:0 12px 30px rgba(11,26,43,.08)}
+.btn.primary,.btn.primary:hover{background:linear-gradient(135deg,#071421,#123A46)!important;color:#F8F0DD!important;border-color:var(--gold)!important;box-shadow:0 10px 24px rgba(11,26,43,.18)}
+
+/* Premium first-page / landing screens */
+#pin,.join-wrap{
+  background:
+    radial-gradient(circle at 50% 22%, rgba(229,193,107,.24), transparent 32%),
+    linear-gradient(rgba(244,239,229,.82),rgba(244,239,229,.88)),
+    linear-gradient(135deg,#d2c3aa,#f7f0e3 42%,#b6a17c);
+  position:relative;overflow:hidden;color:var(--navy)!important;
+}
+#pin:before,.join-wrap:before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.42;background:
+  linear-gradient(110deg, transparent 0 8%, rgba(11,26,43,.12) 8% 9%, transparent 9% 19%, rgba(201,154,59,.14) 19% 20%, transparent 20%),
+  radial-gradient(ellipse at 20% 78%, rgba(11,26,43,.14), transparent 22%),
+  radial-gradient(ellipse at 80% 74%, rgba(14,107,114,.14), transparent 24%)}
+#pin:after,.join-wrap:after{content:"";position:absolute;left:0;right:0;bottom:0;height:36%;pointer-events:none;opacity:.38;background:
+  repeating-linear-gradient(90deg,rgba(11,26,43,.13) 0 2px, transparent 2px 92px),
+  repeating-linear-gradient(0deg,rgba(201,154,59,.18) 0 2px, transparent 2px 72px);clip-path:polygon(0 22%,100% 0,100% 100%,0 100%)}
+.landing-shell{position:relative;z-index:1;width:min(980px,92vw);display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px}
+.landing-logo{font-family:Georgia,'Times New Roman',serif;font-weight:900;line-height:.9;letter-spacing:2px;font-size:clamp(3.4rem,8vw,7rem);color:var(--navy);text-shadow:0 4px 0 rgba(255,255,255,.65),0 18px 32px rgba(11,26,43,.18)}
+.landing-logo .gold{display:block;color:var(--gold);font-size:.82em;text-shadow:0 3px 0 rgba(255,255,255,.7),0 16px 28px rgba(94,62,17,.22)}
+.landing-ribbon{margin-top:2px;background:linear-gradient(135deg,#071421,#132B46);color:#F7F0E3;border:1px solid var(--gold);border-radius:999px;padding:8px 28px;font-weight:900;letter-spacing:4px;text-transform:uppercase;box-shadow:0 8px 22px rgba(11,26,43,.22)}
+.landing-slogan{font-family:Georgia,'Times New Roman',serif;font-weight:800;letter-spacing:4px;font-size:clamp(1.1rem,2.7vw,2rem);color:var(--navy);margin:4px 0 0}.landing-slogan .dot{color:var(--teal);margin:0 10px}.landing-note{font-weight:700;color:#314154;font-size:1rem}
+.access-panel{width:min(620px,92vw);background:rgba(255,251,242,.93);border:1.5px solid var(--border);border-radius:28px;padding:22px 28px;box-shadow:0 22px 55px rgba(11,26,43,.18),inset 0 1px 0 rgba(255,255,255,.9);position:relative}
+.access-panel h2{font-family:Georgia,'Times New Roman',serif;font-size:1.55rem;letter-spacing:2px;margin:0 0 4px;color:var(--navy);text-transform:uppercase}.access-panel p{margin:0 0 14px;color:#425064;font-weight:600}.pin-input,.code-in{background:#FFFDF8!important;color:var(--navy)!important;border:1.5px solid #BCA879!important;box-shadow:inset 0 3px 10px rgba(11,26,43,.06);border-radius:12px!important}.pin-input{width:210px!important;font-size:2rem!important;letter-spacing:10px!important}.landing-btn,.join-wrap .btn.primary{background:linear-gradient(135deg,#071421,#0E3D45)!important;color:#F9EDD4!important;border:1px solid var(--gold)!important;border-radius:12px!important;padding:14px 34px!important;font-size:1rem!important;font-weight:900!important;letter-spacing:1px;box-shadow:0 12px 28px rgba(11,26,43,.22)}
+.landing-signature,.sig,.sig-title{position:relative;z-index:1}.landing-signature{margin-top:4px;background:linear-gradient(135deg,#071421,#132B46);color:#F7F0E3;border:1px solid var(--gold);border-radius:16px;padding:10px 34px;box-shadow:0 14px 28px rgba(11,26,43,.22)}.landing-signature strong{display:block;font-family:Georgia,'Times New Roman',serif;font-size:1.2rem;letter-spacing:1.5px}.landing-signature span{display:block;font-size:.75rem;color:var(--gold2);font-weight:800;margin-top:2px}
+.team-btns{gap:10px!important}.tb{background:linear-gradient(135deg,#10233A,#1D3550)!important;color:#F7F0E3!important;border:1px solid rgba(201,154,59,.55)!important;border-radius:12px!important;box-shadow:0 10px 20px rgba(11,26,43,.16);font-weight:900!important}.tb.sel{background:linear-gradient(135deg,var(--tc,#0E6B72),#071421)!important;color:#fff!important;border-color:var(--gold)!important;transform:translateY(-2px)}
+
+/* Premium career cards */
+.career-card-img{display:block;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 10px 16px rgba(11,26,43,.16));border-radius:12px}.dc.card-mode{background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;overflow:visible!important}.dc.card-mode.active{transform:translateY(-5px) scale(1.015);filter:drop-shadow(0 0 16px rgba(201,154,59,.42))}.dc.card-mode.owned{opacity:.95}.dc.card-mode .career-card-wrap{position:relative;width:100%;height:100%;min-height:122px}.dc.card-mode .dc-owners{position:absolute;left:9%;right:9%;bottom:6%;justify-content:center}.dc.card-mode .ot{background:linear-gradient(135deg,#071421,#0E6B72)!important;border:1px solid var(--gold);font-size:.55rem;color:#F7F0E3}.dc.card-mode .dc-open-btn{margin-top:4px;background:linear-gradient(135deg,#071421,#123A46)!important;color:#F8F0DD!important;border:1px solid var(--gold)!important;border-radius:10px!important}.door-visual-large{width:120px;max-width:26vw;border-radius:18px;box-shadow:0 16px 30px rgba(11,26,43,.18);border:1px solid var(--gold);background:#fff}.sp-icon{font-size:0!important}.sp-header{align-items:flex-start}.sp-name{font-family:Georgia,'Times New Roman',serif!important;letter-spacing:.5px;color:var(--navy)!important}.sp-price{color:var(--gold)!important}.story-panel{background:linear-gradient(135deg,#FFFDF8,#F6EBD8)!important;border-color:var(--gold)!important;border-radius:22px!important}
+
+/* Smart board and cards */
+.main{background:radial-gradient(circle at 50% 0%,rgba(229,193,107,.16),transparent 36%)}.teams-row .tc,.tg .tc{background:linear-gradient(135deg,#FFFDF8,#F3E8D5)!important;border-radius:18px!important;border:1.5px solid var(--border)!important}.tc.lead{box-shadow:0 0 0 2px var(--gold),0 18px 36px rgba(11,26,43,.14)!important}.tc-name{font-family:Georgia,'Times New Roman',serif!important}.tc-score{font-family:Georgia,'Times New Roman',serif!important;font-weight:900!important;color:var(--navy)!important}.spoke-section{background:rgba(11,26,43,.04)!important;border:1px solid rgba(188,168,121,.35)!important}.door-chip{background:linear-gradient(135deg,#071421,#0E6B72)!important;border:1px solid var(--gold);color:#F7F0E3!important}.float-speak-timer{background:linear-gradient(135deg,#071421,#0E3D45)!important;border-color:var(--gold)!important;color:#F8F0DD!important}.float-speak-timer.warn{background:linear-gradient(135deg,#745019,#C99A3B)!important}.float-speak-timer.danger{background:linear-gradient(135deg,#5C1426,#9F2D3E)!important}
+
+/* Risk / sold moments */
+.hc-overlay{background:rgba(10,16,24,.82)!important}.hco-eye{color:var(--gold2)!important}.hco-name,.po-title{font-family:Georgia,'Times New Roman',serif!important;color:#F7F0E3!important}.hco-cost{background:rgba(255,251,242,.94);border:1px solid var(--gold);border-radius:20px;padding:22px;color:#5C1426!important;box-shadow:0 22px 60px rgba(0,0,0,.25)}.hco-react{border-color:var(--gold)!important}.power-overlay{background:rgba(10,16,24,.84)!important}.po-bonus{color:var(--gold2)!important}.sold-toast,.sold-flash{background:linear-gradient(135deg,#071421,#132B46)!important;border-color:var(--gold)!important}.sold-word,.sold-flash strong{color:var(--gold2)!important}
+
+/* Student speaking premium stage */
+.speak-overlay{background:radial-gradient(circle at 50% 0%,rgba(201,154,59,.25),transparent 36%),linear-gradient(135deg,#071421,#132B46)!important}.speak-q{background:rgba(255,251,242,.96)!important;border:1.5px solid var(--gold)!important;color:var(--navy)!important;border-radius:24px!important;box-shadow:0 22px 60px rgba(0,0,0,.28)!important}.timer-ring{border-color:rgba(201,154,59,.42)!important;background:rgba(255,251,242,.08)!important}.timer-ring::before{background:#071421!important;border-color:var(--gold)!important}.speak-num{color:#F7F0E3!important}.speak-frame{background:rgba(255,251,242,.96)!important;border:1.5px solid var(--gold)!important;color:var(--navy)!important}.sf-title{color:var(--teal)!important}.sf-item span{color:#8A5E19!important}
+
+/* Student door cards */
+.sd.premium-door{background:transparent!important;border:0!important;padding:0!important;box-shadow:none!important;opacity:1!important;overflow:visible!important}.sd.premium-door.waiting{filter:grayscale(.18) opacity(.52);pointer-events:none}.sd.premium-door.current{filter:none;transform:translateY(-2px)}.sd.premium-door img{width:100%;border-radius:16px;box-shadow:0 14px 28px rgba(11,26,43,.18);border:1px solid var(--gold)}.premium-door-state{margin-top:6px;text-align:center;font-size:.7rem;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:var(--teal)}.explore-card.premium{padding:0;overflow:hidden}.explore-card.premium img{width:100%;display:block}.explore-card.premium .ec-body{padding:12px 14px;background:#FFFDF8}.door-grid{grid-template-columns:1fr 1fr!important;gap:14px!important}@media(min-width:560px){.door-grid{grid-template-columns:repeat(2,1fr)!important}}
+
+/* Teacher control-room polish */
+.right{scrollbar-color:var(--gold) rgba(11,26,43,.08)}.timer-modes .tm-btn,.rb,.qi,.buy-row select,.hc-btn{border-color:var(--border)!important}.tm-btn.am-prep,.tm-btn.am-spk,.rb.ar{background:#F7F0E3!important;color:var(--navy)!important;border-color:var(--gold)!important}.student-action-panel,#studentActionPanel{border-color:var(--gold)!important;background:linear-gradient(135deg,#FFFDF8,#F4E8D2)!important}.log .li,.li{background:#FFFDF8!important;border:1px solid rgba(188,168,121,.3)!important}
+
+/* final sizing fixes for premium career card images */
+.dc.card-mode::before{display:none!important}.dc.card-mode{min-width:0}.doors-row .dc.card-mode .career-card-wrap{height:176px}.door-track .dc.card-mode .career-card-wrap{height:132px}.door-track .dc.card-mode .dc-open-btn{font-size:.62rem;padding:5px 6px}.doors-row{align-items:start}.door-track{align-items:start}.career-card-img{object-fit:contain!important}.doors-row .career-card-img,.door-track .career-card-img{max-height:100%}.story-panel .sp-icon{width:auto}.story-panel .sp-header{gap:18px}.sig-bar{background:linear-gradient(135deg,#071421,#132B46);border-top:1px solid rgba(201,154,59,.4)}.crown{font-size:0!important}.crown:after{content:'LEADER';font-size:.62rem;font-weight:900;color:var(--gold);border:1px solid var(--gold);border-radius:999px;padding:3px 8px;background:#071421}.tc-meta span{font-weight:800}.student-action-panel .pt,#studentActionPanel .pt{color:var(--teal)!important}
+@media(max-width:1200px){.doors-row .dc.card-mode .career-card-wrap{height:150px}.door-track .dc.card-mode .career-card-wrap{height:115px}}
+
+
+/* ===== TRUE PREMIUM LANDING VISUAL FIX — visible campus design ===== */
+#pin,
+.join-wrap{
+  min-height:100vh!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:28px!important;
+  background-image:
+    linear-gradient(90deg, rgba(247,240,227,.60), rgba(247,240,227,.20) 30%, rgba(247,240,227,.20) 70%, rgba(247,240,227,.60)),
+    radial-gradient(circle at 50% 18%, rgba(255,255,255,.78), rgba(247,240,227,.20) 42%, rgba(11,26,43,.20) 100%),
+    url('assets/campus_teacher_bg.jpg')!important;
+  background-size:cover!important;
+  background-position:center!important;
+  background-repeat:no-repeat!important;
+}
+.join-wrap{
+  background-image:
+    linear-gradient(90deg, rgba(247,240,227,.55), rgba(247,240,227,.16) 30%, rgba(247,240,227,.16) 70%, rgba(247,240,227,.55)),
+    radial-gradient(circle at 50% 20%, rgba(255,255,255,.72), rgba(247,240,227,.18) 44%, rgba(11,26,43,.20) 100%),
+    url('assets/campus_student_bg.jpg')!important;
+}
+#pin:before,.join-wrap:before{
+  opacity:1!important;
+  background:
+    linear-gradient(180deg, rgba(255,251,242,.54) 0%, rgba(255,251,242,.12) 38%, rgba(11,26,43,.20) 100%),
+    radial-gradient(ellipse at 50% 100%, rgba(11,26,43,.46), transparent 42%)!important;
+}
+#pin:after,.join-wrap:after{
+  height:30%!important;
+  opacity:.22!important;
+  background:
+    repeating-linear-gradient(90deg,rgba(201,154,59,.35) 0 2px, transparent 2px 116px),
+    repeating-linear-gradient(0deg,rgba(11,26,43,.25) 0 2px, transparent 2px 92px)!important;
+}
+.landing-shell{
+  width:min(780px,92vw)!important;
+  gap:10px!important;
+  padding:0!important;
+  filter:drop-shadow(0 24px 38px rgba(11,26,43,.20));
+}
+.landing-logo{
+  font-size:clamp(3.2rem,6.6vw,6rem)!important;
+  letter-spacing:1px!important;
+  text-shadow:0 3px 0 rgba(255,255,255,.70),0 16px 28px rgba(11,26,43,.24)!important;
+}
+.landing-logo .gold{
+  color:#C99A3B!important;
+  text-shadow:0 2px 0 rgba(255,255,255,.75),0 12px 22px rgba(94,62,17,.25)!important;
+}
+.landing-ribbon{
+  padding:8px 34px!important;
+  border-radius:999px!important;
+  background:linear-gradient(135deg,#071421,#132B46)!important;
+  border:1.5px solid #C99A3B!important;
+  box-shadow:0 12px 22px rgba(11,26,43,.30)!important;
+}
+.landing-slogan{
+  background:rgba(255,251,242,.82);
+  border:1px solid rgba(201,154,59,.45);
+  border-radius:999px;
+  padding:8px 26px;
+  box-shadow:0 14px 24px rgba(11,26,43,.12);
+  margin:2px 0 6px!important;
+}
+.access-panel{
+  width:min(620px,90vw)!important;
+  padding:24px 30px!important;
+  border-radius:24px!important;
+  border:1.5px solid rgba(201,154,59,.66)!important;
+  background:linear-gradient(135deg,rgba(255,253,248,.96),rgba(247,240,227,.94))!important;
+  box-shadow:0 28px 70px rgba(11,26,43,.25), inset 0 1px 0 rgba(255,255,255,.9)!important;
+}
+.join-wrap .access-panel{width:min(780px,94vw)!important;}
+.access-panel h2{
+  font-size:clamp(1.45rem,2vw,1.9rem)!important;
+  margin-bottom:6px!important;
+}
+.pin-input,.code-in{
+  height:auto!important;
+  min-height:58px!important;
+  background:rgba(255,255,255,.72)!important;
+}
+.landing-btn,
+.join-wrap .btn.primary{
+  min-width:260px!important;
+  box-shadow:0 16px 34px rgba(11,26,43,.28), inset 0 1px 0 rgba(255,255,255,.15)!important;
+}
+.landing-signature{
+  margin-top:6px!important;
+  border-radius:15px!important;
+  padding:11px 36px!important;
+  background:linear-gradient(135deg,#071421,#132B46)!important;
+  border:1.5px solid rgba(201,154,59,.80)!important;
+}
+/* elegant side atmosphere: not toy-like */
+#pin .landing-shell:before,
+.join-wrap .landing-shell:before{
+  content:"";
+  position:fixed;
+  left:5vw;
+  bottom:7vh;
+  width:130px;
+  height:210px;
+  border:1.5px solid rgba(201,154,59,.55);
+  border-radius:70px 70px 12px 12px;
+  background:linear-gradient(180deg,rgba(7,20,33,.86),rgba(19,43,70,.88));
+  box-shadow:0 24px 50px rgba(11,26,43,.28), inset 0 0 0 7px rgba(247,240,227,.08);
+  opacity:.78;
+  z-index:-1;
+}
+#pin .landing-shell:after,
+.join-wrap .landing-shell:after{
+  content:"";
+  position:fixed;
+  right:6vw;
+  bottom:10vh;
+  width:170px;
+  height:170px;
+  border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#F6DA8E,#C99A3B 48%,#6F4C15 100%);
+  box-shadow:0 24px 45px rgba(11,26,43,.25), inset 0 0 0 10px rgba(255,255,255,.18), inset 0 0 0 14px rgba(11,26,43,.28);
+  opacity:.55;
+  z-index:-1;
+}
+@media(max-width:900px){
+  #pin .landing-shell:before,.join-wrap .landing-shell:before,#pin .landing-shell:after,.join-wrap .landing-shell:after{display:none!important}
+  .landing-logo{font-size:clamp(3rem,11vw,5rem)!important}
+}
+
+</style>
+</head>
+<body>
+
+<!-- MODALS -->
+<div class="modal" id="powerModal">
+  <div class="mc">
+    <div class="mt">Power Combination</div>
+    <div style="font-size:2.5rem;margin:8px 0">🎙️ + 💼</div>
+    <div class="ms"><strong>Podcaster + Corporate Pro</strong><br>Voice + Title = Influence<br><br>
+      Any team owning both doors earns <strong>+5 bonus points</strong>.</div>
+    <button class="btn primary" onclick="document.getElementById('powerModal').classList.remove('show')">Close</button>
+  </div>
+</div>
+
+<div class="modal" id="hcModal">
+  <div class="mc">
+    <div class="mt" id="hcTitle">Hidden Cost</div>
+    <div style="font-size:2.5rem;margin:8px 0" id="hcIcon"></div>
+    <div class="ms" id="hcText"></div>
+    <div style="font-size:.75rem;color:var(--muted);margin-bottom:16px" id="hcOwners"></div>
+    <button class="btn primary" onclick="document.getElementById('hcModal').classList.remove('show')">Close</button>
+  </div>
+</div>
+
+<!-- PIN -->
+<div class="screen active" id="pin">
+  <div class="landing-shell">
+    <div class="landing-logo">CAREER <span class="gold">CITY</span></div>
+    <div class="landing-ribbon">The Door Auction</div>
+    <div class="landing-slogan">SPEAK <span class="dot">•</span> THINK <span class="dot">•</span> WIN</div>
+    <div class="access-panel">
+      <h2>Teacher Console</h2>
+      <p>Enter your PIN to start the session</p>
+      <input class="pin-input" id="pinIn" type="password" maxlength="4" placeholder="····"
+        oninput="this.value=this.value.replace(/\D/g,'')"
+        onkeydown="if(event.key==='Enter')checkPin()">
+      <div style="height:12px"></div>
+      <button class="landing-btn" onclick="checkPin()">Start Game →</button>
+      <div class="pin-err" id="pinErr"></div>
+    </div>
+    <div class="landing-signature"><strong>Nashwa Soliman</strong><span>EFL Educator &amp; Instructional Game Designer</span></div>
+  </div>
+</div>
+
+<!-- SETUP -->
+<div class="screen" id="setup">
+  <div class="top">
+    <div class="top-title">THE DOOR <span>AUCTION</span></div>
+    <div class="top-nav">
+      <button class="btn sm" style="background:rgba(255,255,255,.15);color:white;border-color:transparent" onclick="showScreen('teacher')">← Console</button>
+      <button class="btn sm" style="background:#C084FC;color:white;border-color:#C084FC" onclick="startGame()">Start Game →</button>
+    </div>
+  </div>
+  <div class="setup-body">
+    <div>
+      <div class="pt">Game Configuration</div>
+      <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;flex-wrap:wrap">
+        <div>
+          <label style="font-size:.68rem;font-weight:800;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:4px">Number of Teams</label>
+          <select class="size-sel" id="numTeams" style="width:80px" onchange="updateTeamCount()">
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5" selected>5</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:.68rem;font-weight:800;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:4px">Players per Team</label>
+          <select class="size-sel" id="defaultSize" style="width:80px" onchange="updateAllSizes()">
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4" selected>4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+          </select>
+        </div>
+      </div>
+      <div class="pt">Team Names</div>
+      <div id="teamSetup" style="display:flex;flex-direction:column;gap:7px;margin-bottom:16px"></div>
+    </div>
+    <div>
+      <div class="pt">Room Code</div>
+      <div class="big-code" id="setupCode">—</div>
+      <div class="note">Students open student.html and enter this code.</div>
+      <div class="note">Smart board: open screen.html on BenQ PC — syncs automatically.</div>
+      <div style="text-align:center;margin-top:12px">
+        <div id="qrWrap" onclick="toggleQR()" style="display:inline-block;cursor:pointer;position:relative">
+          <canvas id="qrCanvas" width="150" height="150"
+            style="border-radius:10px;border:4px solid white;box-shadow:0 4px 16px rgba(0,0,0,.1);transition:.3s;display:block"></canvas>
+          <div style="font-size:.58rem;color:var(--muted);margin-top:5px;letter-spacing:2px">TAP TO ENLARGE • SCAN TO JOIN</div>
+        </div>
+        <!-- QR FULLSCREEN OVERLAY -->
+        <div id="qrOverlay" onclick="toggleQR()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
+          <canvas id="qrCanvasLarge" width="320" height="320" style="border-radius:16px;border:6px solid white;box-shadow:0 0 60px rgba(255,255,255,.2)"></canvas>
+          <div style="color:white;font-size:1rem;font-weight:800;letter-spacing:3px">SCAN TO JOIN THE GAME</div>
+          <div style="color:rgba(255,255,255,.6);font-size:.8rem">Tap anywhere to close</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TEACHER CONSOLE -->
+<div class="screen" id="teacher">
+  <div class="top">
+    <div class="top-title">THE DOOR <span>AUCTION</span></div>
+    <div class="top-nav">
+      <span class="pill" id="roundPill">Round 0</span>
+      <button class="btn sm" style="background:rgba(255,255,255,.15);color:white;border-color:transparent" onclick="showScreen('setup')">Setup</button>
+      <button class="btn sm" style="background:rgba(255,255,255,.15);color:white;border-color:transparent" onclick="window.open('screen.html','_blank')">Smart Board ↗</button>
+      <button class="btn sm" style="background:rgba(255,255,255,.15);color:white;border-color:transparent" onclick="window.open('student.html','_blank')">Student ↗</button>
+      <button class="btn sm" style="background:rgba(255,255,255,.15);color:white;border-color:transparent" id="muteBtn" onclick="toggleMusic()">🔊</button>
+    </div>
+  </div>
+  <!-- LARGE FLOATING SPEAKING TIMER -->
+  <div class="float-speak-timer" id="floatSpeakTimer">
+    <div class="float-speak-label">Speaking Timer</div>
+    <div class="float-speak-digits" id="floatSpeakDigits">00:00</div>
+    <div class="float-speak-help">Teacher timer visible</div>
+  </div>
+  <div class="step-bar" id="stepBar"></div>
+  <div class="main">
+    <div class="left">
+      <div class="panel">
+        <div class="pt" id="boardRound">ROUND 0 — PRE-GAME</div>
+        <div class="door-track" id="doorTrack"></div>
+        <!-- ACTIVE DOOR DESCRIPTION — replaces round instruction when door is open -->
+        <div id="activeDoorBanner" style="display:none;margin-top:6px;padding:8px 12px;
+          background:linear-gradient(135deg,#FFFDF8,#F4E8D2);
+          border-left:3px solid var(--gold,#C99A3B);border-radius:8px">
+          <div id="activeDoorBannerName" style="font-size:.72rem;font-weight:900;color:var(--navy,#0B1A2B);margin-bottom:2px"></div>
+          <div id="activeDoorBannerStory" style="font-size:.75rem;color:#555;line-height:1.5"></div>
+        </div>
+        <div class="round-instruction" id="roundInstruction"></div>
+      </div>
+      <div class="panel teams-panel">
+        <div class="pt">Teams &amp; Scores — Tap + After Each Student Speaks</div>
+        <div class="tg" id="teamGrid"></div>
+      </div>
+    </div>
+    <div class="right">
+      <div class="panel">
+        <div class="pt">Timer</div>
+        <div class="timer-modes">
+          <button class="tm-btn" id="tmPrep" onclick="setMode('prep')">⏱ PREP<br>2:00</button>
+          <button class="tm-btn" id="tmS30" onclick="setMode('s30')">🗣 SPEAK<br>30s</button>
+          <button class="tm-btn" id="tmS45" onclick="setMode('s45')">🗣 SPEAK<br>45s</button>
+        </div>
+        <div class="t-lbl" id="tLabel">Select a mode</div>
+        <div class="sand-wrap-sm">
+          <svg class="sand-sm" viewBox="0 0 32 40" id="sandSmSvg">
+            <rect x="4" y="2" width="24" height="6" rx="3" fill="rgba(0,0,0,.15)"/>
+            <rect x="4" y="32" width="24" height="6" rx="3" fill="rgba(0,0,0,.15)"/>
+            <path d="M6,8 L26,8 L20,20 L26,32 L6,32 L12,20 Z" fill="rgba(0,0,0,.04)" stroke="rgba(0,0,0,.15)" stroke-width="1"/>
+            <clipPath id="tcTop"><polygon points="6,8 26,8 20,20 12,20"/></clipPath>
+            <rect id="tSandTop" x="6" y="8" width="20" height="12" fill="#7C3AED" opacity=".7" clip-path="url(#tcTop)"/>
+            <clipPath id="tcBot"><polygon points="12,20 20,20 26,32 6,32"/></clipPath>
+            <rect id="tSandBot" x="6" y="32" width="20" height="0" fill="#7C3AED" opacity=".7" clip-path="url(#tcBot)"/>
+          </svg>
+          <div class="t-digits" id="tNum" style="color:var(--muted)">--:--</div>
+        </div>
+        <div class="t-btns">
+          <button class="btn primary sm" id="tStart" onclick="toggleTimer()">Start</button>
+          <button class="btn sm" onclick="stopTimer()">Stop</button>
+          <button class="btn sm" onclick="resetTimer()">Reset</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="pt">Rounds</div>
+        <div class="rg" id="roundGrid"></div>
+      </div>
+      <!-- CLAIM STATUS — always visible when door is open -->
+      <div class="panel" id="claimStatusPanel" style="display:none;border:2px solid #6EE7B7;background:#ECFDF5">
+        <div class="pt" style="color:#065F46">Door Claim Status</div>
+        <div id="claimStatusContent" style="font-size:.88rem;color:#065F46;font-weight:700"></div>
+      </div>
+
+      <!-- STUDENT LIVE ACTION PANEL -->
+      <div class="panel" id="studentActionPanel" style="border:2px solid #C4B5FD;background:#f5f0ff;display:none">
+        <div class="pt" style="color:#7C3AED">Student Answering Now</div>
+        <div id="studentActionContent"></div>
+      </div>
+
+      <div class="panel" style="max-height:220px;overflow-y:auto">
+        <div class="pt">Active Door</div>
+        <div id="activeDoorDesc" style="display:none;padding:8px 10px;background:#F7F0E3;border-radius:8px;border-left:3px solid var(--gold,#C99A3B);font-size:.8rem;color:#333;line-height:1.5;margin-bottom:8px"></div>
+        <div class="ql" id="qList">
+          <div style="color:var(--muted);font-size:.78rem">Open a door to see questions.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="pt">Claim &amp; Challenge</div>
+        <div style="margin-bottom:8px">
+          <select class="sel" id="buyTeam" style="margin-bottom:6px"></select>
+          <div style="display:flex;gap:5px;flex-wrap:wrap">
+            <button class="btn sm" style="background:#065F46;color:white;border-color:#065F46;flex:1" onclick="acceptChallenge()">✓ Accept</button>
+            <button class="btn sm" style="background:#D97706;color:white;border-color:#D97706;flex:1" onclick="rescueChallenge()">⏱ Rescue 10s</button>
+            <button class="btn sm" style="background:#DC2626;color:white;border-color:#DC2626;flex:1" onclick="releaseDoor()">✗ Release Door</button>
+          </div>
+        </div>
+        <div class="pt" style="margin-top:8px">Bonus Points</div>
+        <div class="score-row">
+          <button class="btn sm" onclick="sc(1,'Connector +1')" title="Used: firstly, also, on top of that…">+1 Connector</button>
+          <button class="btn sm" onclick="sc(1,'Future grammar +1')" title="Used: going to, plan to, intend to…">+1 Future</button>
+          <button class="btn sm" onclick="sc(1,'3rd reason +1')">+1 Reason</button>
+          <button class="btn sm" onclick="sc(1,'Peer reaction +1')" style="background:#FFF5F5;border-color:#FCA5A5;color:#DC2626">👍 React</button>
+          <button class="btn sm" onclick="revealPower()" style="background:#F5F3FF;border-color:#C4B5FD;color:#5B21B6">⭐ Power +5</button>
+        </div>
+        <div class="pt" style="margin-top:8px">Rotation Tracker</div>
+        <div id="rotationTracker" style="font-size:.75rem;color:#555;padding:4px 0">Open a door to see rotation.</div>
+      </div>
+      <div class="panel">
+        <div class="pt">Hidden Cost Reveals — Round 4</div>
+        <div class="hc-grid" id="hcGrid"></div>
+      </div>
+      <div class="panel">
+        <div class="pt">Game Log</div>
+        <div class="log" id="log"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+<script>
+const DCOLS=['#FF6B00','#E91E8C','#00897B','#7C3AED','#1565C0','#0277BD','#2E7D32','#F57F17'];
+const DOORS=[
+  {id:1,name:'Content Creator',short:'Creator',price:4,color:DCOLS[0],icon:'🎬',
+   story:'This person makes videos every day. They have 200,000 followers. Companies pay them to show their products. They earn money from home.',
+   cost:'Their private life is public. One mistake can end everything.',
+   q:[['start','Do you watch online videos every day? What topics?'],['start','Would you like to have 200,000 followers? Why?'],['build','Is making videos a real job? Why do you think so?'],['build','Would you share your personal life online? Why or why not?'],['challenge','I want this door because I am going to _____ and I plan to _____.']]}
+ ,{id:2,name:'Brand Founder',short:'Founder',price:5,color:DCOLS[1],icon:'📦',
+   story:'This person started a product business at home. They send 500 orders every month. They have no boss. They built everything alone.',
+   cost:'They work very long hours. Some months the money is not enough.',
+   q:[['start','Do you buy products online? What do you buy?'],['start','Would you like to start your own business? What would you sell?'],['build','Is it better to have your own business or work for a company? Why?'],['build','Would you work very long hours for your own business? Why?'],['challenge','I want this door because I plan to _____ and I hope to _____.']]}
+ ,{id:3,name:'The Freelancer',short:'Freelance',price:3,color:DCOLS[2],icon:'💻',
+   story:'This person works for 5 different companies online. They earn good money every month. They have no office and no boss. They work from anywhere.',
+   cost:'They have no contract. If one company leaves, they lose money immediately.',
+   q:[['start','Do you like working with rules and a fixed schedule? Why?'],['start','Would you like to work from home? Why?'],['build','Is freedom more important than job security? Why?'],['build','What would you do if you had no income for one month?'],['challenge','I want this door because I will _____ and I intend to _____.']]}
+ ,{id:4,name:'The Podcaster',short:'Podcaster',price:3,color:DCOLS[3],icon:'🎙️',
+   story:'This person has a podcast about real problems young people have. 50,000 people listen every week. They speak at events and conferences.',
+   cost:'Everything they say is public and permanent. One wrong opinion stays forever.',
+   q:[['start','Do you listen to podcasts? What topics do you like?'],['start','What problem would you talk about in a podcast?'],['build','Is it important to have a public voice today? Why?'],['build','Would you share your opinions publicly? Why or why not?'],['challenge','I want this door because I am going to _____ and I would like to _____.']]}
+ ,{id:5,name:'Corporate Pro',short:'Corporate',price:3,color:DCOLS[4],icon:'💼',
+   story:'This person works for a big international company. They have a good title and a stable salary. Their family is very proud of them.',
+   cost:'They work for someone else\'s dream. Their salary will not grow beyond a limit.',
+   q:[['start','Would you like to work for a big company? Why?'],['start','Is a good salary important to you? Why?'],['build','Is it better to have a stable job or your own business? Why?'],['build','Is family approval important when you choose a career? Why?'],['challenge','I want this door because I plan to _____ and I hope to _____.']]}
+ ,{id:6,name:'The AI Expert',short:'AI Expert',price:4,color:DCOLS[5],icon:'🤖',
+   story:'This person learned AI tools for 6 months. Now they work for clients in different countries. They earn in dollars. They never leave home.',
+   cost:'Nobody around them understands their work. They feel alone.',
+   q:[['start','Do you use any AI tools? Name one.'],['start','Would you like to work from home for international clients? Why?'],['build','Is learning AI important for young people today? Why?'],['build','Would you feel lonely working alone at home every day?'],['challenge','I want this door because I intend to _____ and I am going to _____.']]}
+ ,{id:7,name:'Wellness Coach',short:'Wellness',price:3,color:DCOLS[6],icon:'💪',
+   story:'This person teaches fitness and healthy habits online. They have 80,000 followers. Companies send them free products. They love their work.',
+   cost:'Their body is their brand. One injury or one bad photo can hurt their business.',
+   q:[['start','Do you exercise regularly? What do you do?'],['start','Would you like to help other people get healthy? How?'],['build','Is health more important than money? Why?'],['build','Would you be comfortable if your body was your brand? Why?'],['challenge','I want this door because I hope to _____ and I plan to _____.']]}
+ ,{id:8,name:'The Creative',short:'Creative',price:2,color:DCOLS[7],icon:'🎨',
+   story:'This person styles people and creates visual designs for brands. They charge high prices per session. They are always fully booked.',
+   cost:'Many people do not think this is a serious job. They must prove themselves every time.',
+   q:[['start','Do you enjoy art, design, or styling? What do you like?'],['start','Would you like a job where every day is different? Why?'],['build','Is creative work a serious career? Why do you think so?'],['build','How would you respond if people did not respect your job?'],['challenge','I want this door because I would like to _____ and I intend to _____.']]}
+];
+
+const ROUNDS=[
+  {name:'Round 0 — Pre-Game',instruction:'Students read the pre-game activity sheet and watch the video. Ask them: which door do you want most and why?'},
+  {name:'Round 1 — Explore',instruction:'Students browse all 8 door cards on their iPad. Give 3 minutes. Ask each team: which two doors are you most interested in?'},
+  {name:'Round 2 — Door Market',instruction:'Open one door at a time. Every team member speaks before their team can buy. Press + after each student speaks. BUY unlocks when all spoke.'},
+  {name:'Round 3 — Defend',instruction:'Each team presents their doors. Ask: how do your two doors connect? Award +3 for strong connections.'},
+  {name:'Round 4 — Hidden Costs',instruction:'Reveal hidden costs one by one using the buttons below. Teams must react with one sentence each. Award +1 per reaction.'},
+  {name:'Round 5 — Power Combination',instruction:'Reveal the secret winning combination. Award +5 to the team owning both Podcaster and Corporate Pro.'},
+  {name:'Round 6 — Writing Task',instruction:'Students write their personal future plans paragraph. Each student uses at least 4 future expressions from the game.'}
+];
+const TCOLS=['#17324D','#6D2F1D','#23412E','#43235F','#9A6A16'];
+const PIN='7429';
+const CH='doorauction2025';
+
+let G={
+  room:String(Math.floor(1000+Math.random()*9000)),
+  round:0,activeDoor:null,
+  timerMode:null,timerLeft:0,timerBase:0,timerRunning:false,
+  revealedCosts:[],
+  numTeams:5,
+  claimedBy:null, // index of team that claimed current door, null if unclaimed
+  challengeAccepted:false,
+  rotationIndex:{}, // doorId -> teamIndex of who speaks next
+  performerHistory:[], // [{doorId, teamIdx, studentIdx}]
+  teams:[
+    {name:'The Starters',color:TCOLS[0],coins:12,score:0,doors:[],bd:[],spoke:0,teamSize:4,active:true},
+    {name:'The Builders',color:TCOLS[1],coins:12,score:0,doors:[],bd:[],spoke:0,teamSize:4,active:true},
+    {name:'The Makers', color:TCOLS[2],coins:12,score:0,doors:[],bd:[],spoke:0,teamSize:4,active:true},
+    {name:'The Risers', color:TCOLS[3],coins:12,score:0,doors:[],bd:[],spoke:0,teamSize:4,active:true},
+    {name:'The Changers',color:TCOLS[4],coins:12,score:0,doors:[],bd:[],spoke:0,teamSize:4,active:true}
+  ]
+};
+let timerInt=null,muted=false;
+
+// AUDIO
+let AC;
+function getAC(){if(!AC)AC=new(window.AudioContext||window.webkitAudioContext)();return AC;}
+function tone(f,d,t='sine',v=.14){
+  if(muted)return;
+  try{const ac=getAC(),o=ac.createOscillator(),g=ac.createGain();
+  o.connect(g);g.connect(ac.destination);o.type=t;o.frequency.value=f;
+  g.gain.setValueAtTime(0,ac.currentTime);
+  g.gain.linearRampToValueAtTime(v,ac.currentTime+.02);
+  g.gain.linearRampToValueAtTime(0,ac.currentTime+d);
+  o.start();o.stop(ac.currentTime+d+.05);}catch(e){}
+}
+function sndBuy(){tone(440,.1,'triangle',.14);setTimeout(()=>tone(550,.15,'triangle',.14),120);}
+function sndWarn(){tone(300,.25,'sawtooth',.12);}
+function sndDanger(){tone(220,.18,'square',.18);setTimeout(()=>tone(180,.18,'square',.18),200);}
+function sndReveal(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,.2,'triangle',.16),i*100));}
+function sndPower(){[523,659,784,1047,1319].forEach((f,i)=>setTimeout(()=>tone(f,.25,'triangle',.2),i*80));}
+function sndPrep(){tone(440,.15,'triangle',.13);setTimeout(()=>tone(660,.2,'triangle',.13),160);}
+function toggleMusic(){muted=!muted;document.getElementById('muteBtn').textContent=muted?'🔇':'🔊';}
+
+
+/* ── SUPABASE REALTIME SYNC ── */
+const SUPABASE_URL='https://tggontgfrddojbbggavl.supabase.co';
+const SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnZ29udGdmcmRkb2piYmdnYXZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMDExMzAsImV4cCI6MjA5NTU3NzEzMH0.SsyIIDRLsoas9kAK4biBq5H44-78iTcdjs3wHjXpxOQ';
+const SYNC_CH='doorauction2025';
+let _ws=null,_wsRef=1,_onState=null,_connected=false,_wsQueue=[],_pushTimer=null,_lastState=null;
+function syncInit(onState){
+  _onState=onState;
+  try{const l=JSON.parse(localStorage.getItem(SYNC_CH)||'null');if(l&&onState)onState(l);}catch(e){}
+  _connect();
+}
+function syncPush(state){
+  _lastState=state;
+  try{localStorage.setItem(SYNC_CH,JSON.stringify(state));}catch(e){}
+  if(_pushTimer)clearTimeout(_pushTimer);
+  _pushTimer=setTimeout(()=>{
+    _wsSend({topic:`realtime:${SYNC_CH}`,event:'broadcast',
+      payload:{type:'broadcast',event:'state',payload:{state}},ref:String(_wsRef++)});
+  },250);
+}
+function _connect(){
+  const url=SUPABASE_URL.replace('https://','wss://')+`/realtime/v1/websocket?apikey=${SUPABASE_ANON}&vsn=1.0.0`;
+  try{_ws=new WebSocket(url);}catch(e){setTimeout(_connect,3000);return;}
+  _ws.onopen=()=>{
+    _connected=true;
+    _wsSend({topic:`realtime:${SYNC_CH}`,event:'phx_join',
+      payload:{config:{broadcast:{self:false}}},ref:String(_wsRef++)});
+    _wsQueue.forEach(m=>_ws.send(JSON.stringify(m)));_wsQueue=[];
+    _wsSend({topic:`realtime:${SYNC_CH}`,event:'broadcast',
+      payload:{type:'broadcast',event:'request_state',payload:{}},ref:String(_wsRef++)});
+  };
+  _ws.onmessage=(e)=>{
+    try{
+      const msg=JSON.parse(e.data);
+      if(msg.event==='broadcast'&&msg.payload){
+        const ev=msg.payload.event,pl=msg.payload.payload||{};
+        if(ev==='state'&&pl.state&&_onState){
+          try{localStorage.setItem(SYNC_CH,JSON.stringify(pl.state));}catch(err){}
+          _onState(pl.state);
+        }
+        if((ev==='request_state'||ev==='hello')&&_lastState)setTimeout(()=>syncPush(_lastState),300);
+      }
+    }catch(err){}
+  };
+  _ws.onclose=()=>{_connected=false;setTimeout(_connect,2000);};
+  _ws.onerror=()=>{};
+}
+function _wsSend(msg){
+  if(_connected&&_ws&&_ws.readyState===WebSocket.OPEN)_ws.send(JSON.stringify(msg));
+  else _wsQueue.push(msg);
+}
+/* ── END SYNC ── */
+
+function save(){
+  // Compute taken teams list for student page
+  G.takenTeams=[];
+  // (Students register their team choice via studentAction — we track via claimedBy and student joining)
+  syncPush(G);
+  try{localStorage.setItem(CH,JSON.stringify(G));}catch(e){}
+}
+function loadSaved(){try{const s=JSON.parse(localStorage.getItem(CH)||'null');if(s&&s.room)G={...G,...s};}catch(e){}}
+
+// Listen for student actions via Supabase Realtime
+let lastStudentAction=null;
+let lastClaimedBy=undefined;
+syncInit((st)=>{
+  if(!st)return;
+  if(st.speakingTimer){G.speakingTimer=st.speakingTimer;updateTimerDisplay();}
+  if(st.studentAction){
+    const sa=st.studentAction;
+    const key=sa.teamName+sa.question+sa.done;
+    if(key!==lastStudentAction){lastStudentAction=key;showStudentAction(sa);}
+  }
+  // Watch for claim changes from students
+  if(st.claimedBy!==undefined&&st.claimedBy!==lastClaimedBy){
+    lastClaimedBy=st.claimedBy;
+    G.claimedBy=st.claimedBy;
+    renderClaimStatus();renderRotation();
+    if(st.claimedBy!==null&&G.teams[st.claimedBy]){
+      const t=G.teams[st.claimedBy];
+      const d=G.activeDoor!==null?DOORS[G.activeDoor]:null;
+      log(`CLAIMED: ${t.name} claimed ${d?d.name:'door'}`);
+      showSoldFlash(`${t.name} claimed the door!`);
+      // Auto-select claiming team in the buy dropdown
+      const sel=document.getElementById('buyTeam');
+      if(sel)sel.value=String(st.claimedBy);
+    }
+  }
+  if(st.teams){
+    st.teams.forEach((t,i)=>{
+      if(!G.teams[i])return;
+      if(t.coins<G.teams[i].coins)G.teams[i].coins=t.coins;
+      if(t.doors&&t.doors.length>G.teams[i].doors.length){G.teams[i].doors=t.doors;}
+      if(t.score>G.teams[i].score){G.teams[i].score=t.score;G.teams[i].bd=t.bd||G.teams[i].bd;}
+    });
+    renderTeams();
+  }
+});
+// Fallback local poll
+setInterval(()=>{
+  try{
+    const raw=localStorage.getItem(CH);if(!raw)return;
+    const st=JSON.parse(raw);if(!st)return;
+    if(st.speakingTimer){G.speakingTimer=st.speakingTimer;updateTimerDisplay();}
+    // Check claim changes
+    if(st.claimedBy!==undefined&&st.claimedBy!==lastClaimedBy){
+      lastClaimedBy=st.claimedBy;
+      G.claimedBy=st.claimedBy;
+      renderClaimStatus();renderRotation();
+      if(st.claimedBy!==null&&G.teams[st.claimedBy]){
+        const sel=document.getElementById('buyTeam');
+        if(sel)sel.value=String(st.claimedBy);
+      }
+    }
+    if(!st.studentAction)return;
+    const sa=st.studentAction;
+    const key=sa.teamName+sa.question+sa.done;
+    if(key===lastStudentAction)return;
+    lastStudentAction=key;showStudentAction(sa);
+  }catch(e){}
+
+},2000);
+
+function showStudentAction(sa){
+  const panel=document.getElementById('studentActionPanel');
+  const content=document.getElementById('studentActionContent');
+  if(!panel||!content)return;
+  if(sa.done){
+    panel.style.borderColor='#6EE7B7';panel.style.background='#ECFDF5';
+    content.innerHTML=`
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="width:10px;height:10px;border-radius:50%;background:${sa.teamColor}"></div>
+        <div style="font-size:.88rem;font-weight:800;color:${sa.teamColor}">${sa.teamName}</div>
+        <div style="font-size:.88rem;font-weight:800;color:#065F46">✓ Done Speaking</div>
+      </div>
+      <div style="font-size:.82rem;color:#444;font-style:italic">"${sa.question}"</div>`;
+  } else {
+    panel.style.borderColor='#C4B5FD';panel.style.background='#f5f0ff';
+    content.innerHTML=`
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="width:10px;height:10px;border-radius:50%;background:${sa.teamColor}"></div>
+        <div style="font-size:.88rem;font-weight:800;color:${sa.teamColor}">${sa.teamName}</div>
+        <div style="padding:2px 8px;border-radius:999px;background:#E9D5FF;color:#5B21B6;font-size:.72rem;font-weight:800">${sa.level}</div>
+      </div>
+      <div style="font-size:.9rem;color:#1A0A2E;font-weight:600;line-height:1.5">${sa.question}</div>`;
+  }
+  panel.style.display='block';
+}
+
+
+const DOOR_DISPLAY=[
+  {title:'Creator Studio',sub:'Content Creator Path'},
+  {title:'Startup Shop',sub:'Young Founder Path'},
+  {title:'Remote Hub',sub:'Freelance Path'},
+  {title:'Voice Studio',sub:'Podcaster Path'},
+  {title:'Corporate Tower',sub:'Corporate Professional Path'},
+  {title:'AI Lab',sub:'AI Expert Path'},
+  {title:'Wellness Studio',sub:'Wellness Coach Path'},
+  {title:'Design Studio',sub:'Creative Designer Path'}
+];
+function doorAsset(i){return `assets/door${i+1}.png`;}
+function doorTitle(i){return DOOR_DISPLAY[i]?.title || DOORS[i]?.name || '';}
+function doorSub(i){return DOOR_DISPLAY[i]?.sub || '';}
+function checkPin(){
+  if(document.getElementById('pinIn').value===PIN){
+    loadSaved();showScreen('teacher');renderAll();
+  }else{document.getElementById('pinErr').textContent='Incorrect PIN.';document.getElementById('pinIn').value='';}
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  renderAll();
+}
+
+function startGame(){
+  // Read team names and sizes from setup
+  G.teams.forEach((t,i)=>{
+    const ni=document.getElementById('tn'+i);
+    const si=document.getElementById('ts'+i);
+    if(ni)t.name=ni.value||t.name;
+    if(si)t.teamSize=+si.value||4;
+  });
+  showScreen('teacher');
+}
+
+function renderClaimStatus(){
+  const panel=document.getElementById('claimStatusPanel');
+  const content=document.getElementById('claimStatusContent');
+  if(!panel||!content)return;
+  if(G.activeDoor===null||G.activeDoor===undefined){
+    panel.style.display='none';return;
+  }
+  panel.style.display='block';
+  const d=DOORS[G.activeDoor];
+  if(G.claimedBy===null||G.claimedBy===undefined){
+    panel.style.borderColor='#FCD34D';
+    panel.style.background='#FFFBEB';
+    content.innerHTML=`<span style="color:#D97706">⏳ Waiting for a team to claim ${d.icon} ${d.name}…</span>`;
+  } else {
+    const t=G.teams[G.claimedBy];
+    panel.style.borderColor='#6EE7B7';
+    panel.style.background='#ECFDF5';
+    content.innerHTML=`
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <div style="width:12px;height:12px;border-radius:50%;background:${t.color}"></div>
+        <strong style="color:${t.color};font-size:1rem">${t.name}</strong>
+        <span style="color:#065F46">claimed ${d.icon} ${d.name}</span>
+      </div>
+      <div style="font-size:.78rem;color:#555">Give at least two different reasons — third reason earns +1 bonus</div>`;
+  }
+}
+
+function renderAll(){
+  renderSetup();renderDoors();renderTeams();renderRounds();
+  renderBuySelect();renderQuestions();renderHCGrid();renderSteps();
+  renderClaimStatus();
+  updateTimerDisplay();
+  document.getElementById('setupCode').textContent=G.room;
+  generateQR();
+}
+
+function renderSteps(){
+  const el=document.getElementById('stepBar');if(!el)return;
+  el.innerHTML=ROUNDS.map((r,i)=>{
+    const cls=i===G.round?'active':i<G.round?'done':'';
+    return `${i>0?'<span class="step-arrow">›</span>':''}
+    <div class="step-item ${cls}" onclick="setRound(${i})">
+      <div class="step-num">${i<G.round?'✓':i+1}</div>
+      <span>${r.name.replace('Round '+i+' — ','')}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderSetup(){
+  const el=document.getElementById('teamSetup');if(!el)return;
+  // Sync numTeams selector
+  const nt=document.getElementById('numTeams');
+  if(nt)nt.value=String(G.numTeams||5);
+  el.innerHTML=G.teams.map((t,i)=>`
+    <div class="sr" style="${!t.active?'opacity:.38;pointer-events:none':''}">
+      <div class="sdot" style="background:${t.color}"></div>
+      <input class="si" id="tn${i}" value="${t.name}" placeholder="Team name…" ${!t.active?'disabled':''}>
+      <select class="size-sel" id="ts${i}" ${!t.active?'disabled':''}>
+        <option value="2" ${t.teamSize===2?'selected':''}>2</option>
+        <option value="3" ${t.teamSize===3?'selected':''}>3</option>
+        <option value="4" ${t.teamSize===4?'selected':''}>4</option>
+        <option value="5" ${t.teamSize===5?'selected':''}>5</option>
+        <option value="6" ${t.teamSize===6?'selected':''}>6</option>
+      </select>
+    </div>`).join('');
+}
+
+function updateTeamCount(){
+  const n=+document.getElementById('numTeams').value;
+  G.numTeams=n;
+  G.teams.forEach((t,i)=>t.active=i<n);
+  renderSetup();renderTeams();renderBuySelect();save();
+}
+
+function updateAllSizes(){
+  const s=+document.getElementById('defaultSize').value;
+  G.teams.forEach(t=>{if(t.active)t.teamSize=s;});
+  renderSetup();renderTeams();save();
+}
+
+function renderDoors(){
+  const el=document.getElementById('doorTrack');if(!el)return;
+  el.innerHTML=DOORS.map((d,i)=>{
+    const owners=G.teams.filter(t=>t.doors.includes(i));
+    const act=G.activeDoor===i;
+    return `<div class="dc card-mode ${act?'active':''} ${owners.length?'owned':''}"
+      style="--dc-col:${d.color}" onclick="openDoor(${i})">
+      <div class="career-card-wrap">
+        <img class="career-card-img" src="${doorAsset(i)}" alt="${doorTitle(i)}">
+        <div class="dc-owners">
+          ${owners.map(o=>`<span class="ot">${o.name.replace('The ','')}</span>`).join('')}
+        </div>
+      </div>
+      <button class="dc-open-btn ${act?'is-active':''}"
+        onclick="event.stopPropagation();openDoor(${i})">${act?'● Active':'Open'}</button>
+    </div>`;
+  }).join('');
+}
+
+function renderTeams(){
+  const el=document.getElementById('teamGrid');if(!el)return;
+  const active=G.teams.filter(t=>t.active!==false);
+  const mx=Math.max(...active.map(t=>t.score));
+  el.style.gridTemplateColumns=`repeat(${active.length},1fr)`;
+  el.innerHTML=active.map((t,i)=>{
+    const dots=Array.from({length:t.teamSize},(_,di)=>`
+      <div class="sdot" style="width:9px;height:9px;border-radius:50%;
+        background:${di<t.spoke?t.color:'white'};
+        border:1.5px solid ${t.color};transition:.2s"></div>`).join('');
+    return `<div class="tc ${t.score===mx&&t.score>0?'lead':''}" style="--tc-col:${t.color}">
+      ${t.score===mx&&t.score>0?'<div style="position:absolute;top:8px;right:8px;font-size:14px">👑</div>':''}
+      <div class="tc-top" style="background:${t.color}"></div>
+      <div class="tc-body">
+        <div class="tc-name" style="color:${t.color}">${t.name}</div>
+        <div class="tc-score">${t.score}</div>
+        <div class="tc-pts">POINTS</div>
+        <div class="tc-meta"><span>${t.coins} coins</span><span>${t.doors.length} doors</span></div>
+        <div class="spoke-lbl">Spoke</div>
+        <div class="spoke-row">
+          <div class="spoke-count" style="color:${t.color}">${t.spoke}<span style="font-size:.9rem;color:var(--muted)">/${t.teamSize}</span></div>
+          <div class="spoke-btns">
+            <button class="s-add" style="border-color:${t.color};--tc-col:${t.color}" onclick="spokePlus(${i})">+</button>
+            <button class="s-rst" onclick="spokeReset(${i})">↺</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:3px">${dots}</div>
+      </div>
+      <div class="tc-btns">
+        <button class="btn xs" onclick="addScore(${i},1,'Easy +1')">+1</button>
+        <button class="btn xs" onclick="addScore(${i},2,'Build +2')">+2</button>
+        <button class="btn xs" onclick="addScore(${i},3,'Hard +3')">+3</button>
+        <button class="btn xs" style="background:#F5F3FF;border-color:#C4B5FD;color:#5B21B6" onclick="addScore(${i},5,'+5')">+5</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function spokePlus(i){
+  if(G.teams[i].spoke<G.teams[i].teamSize){
+    G.teams[i].spoke++;sndBuy();
+    if(G.teams[i].spoke===G.teams[i].teamSize){sndReveal();log(`${G.teams[i].name}: all spoke!`);}
+    renderTeams();save();
+  }
+}
+function spokeReset(i){G.teams[i].spoke=0;renderTeams();save();}
+
+function renderRounds(){
+  const el=document.getElementById('roundGrid');if(!el)return;
+  el.innerHTML=ROUNDS.map((r,i)=>`
+    <button class="rb ${G.round===i?'ar':''}" onclick="setRound(${i})">
+      ${r.name.replace('Round '+i+' — ','')}
+    </button>`).join('');
+  const p=document.getElementById('roundPill');
+  const b=document.getElementById('boardRound');
+  if(p)p.textContent=ROUNDS[G.round].name;
+  if(b)b.textContent=ROUNDS[G.round].name.toUpperCase();
+  // Show instruction
+  const ins=document.getElementById('roundInstruction');
+  if(ins){ins.textContent=ROUNDS[G.round].instruction;ins.classList.add('show');}
+}
+
+function renderBuySelect(){
+  const el=document.getElementById('buyTeam');if(!el)return;
+  el.innerHTML=G.teams.map((t,i)=>t.active!==false?`<option value="${i}">${t.name}</option>`:'').join('');
+}
+
+function renderQuestions(){
+  const el=document.getElementById('qList');if(!el)return;
+  const desc=document.getElementById('activeDoorDesc');
+  if(G.activeDoor===null){
+    el.innerHTML='<div style="color:var(--muted);font-size:.78rem">Open a door to see questions.</div>';
+    if(desc)desc.style.display='none';
+    return;
+  }
+  const d=DOORS[G.activeDoor];
+  if(desc){
+    desc.textContent=d.story;
+    desc.style.display='block';
+  }
+  el.innerHTML=d.q.map(([lv,tx])=>`
+    <div class="qi">
+      <span class="ql-lv ${lv}" style="min-width:28px;text-align:center">${lv==='start'?'+1':lv==='build'?'+2':'+3'}</span>
+      <div class="qi-text">${tx}</div>
+    </div>`).join('');
+}
+
+function renderHCGrid(){
+  const el=document.getElementById('hcGrid');if(!el)return;
+  el.innerHTML=DOORS.map((d,i)=>`
+    <button class="hc-btn ${G.revealedCosts.includes(i)?'revealed':''}"
+      onclick="revealCost(${i})" ${G.revealedCosts.includes(i)?'disabled':''}>
+      ${d.icon} ${d.short}
+    </button>`).join('');
+}
+
+function openDoor(i){
+  G.activeDoor=i;
+  G.claimedBy=null;
+  G.challengeAccepted=false;
+  G.teams.forEach(t=>t.spoke=0);
+  // Show door description banner prominently
+  const banner=document.getElementById('activeDoorBanner');
+  const bannerName=document.getElementById('activeDoorBannerName');
+  const bannerStory=document.getElementById('activeDoorBannerStory');
+  if(banner&&bannerName&&bannerStory){
+    const d=DOORS[i];
+    bannerName.textContent=`${d.icon} ${d.name} — ${d.price} coins`;
+    bannerStory.textContent=d.story;
+    banner.style.display='block';
+    // Hide round instruction to avoid crowding
+    const ins=document.getElementById('roundInstruction');
+    if(ins)ins.classList.remove('show');
+  }
+  renderDoors();renderQuestions();renderTeams();renderRotation();renderClaimStatus();
+  setMode('prep');sndPrep();
+  log(`Opened: ${DOORS[i].name}`);save();
+}
+
+function buyDoor(){
+  if(G.activeDoor===null){log('Open a door first.');return;}
+  const ti=+document.getElementById('buyTeam').value;
+  const d=DOORS[G.activeDoor];const t=G.teams[ti];
+  if(t.coins<d.price){log(`${t.name}: not enough coins`);return;}
+  animateCoin(ti,d.price);
+  t.coins-=d.price;
+  if(!t.doors.includes(G.activeDoor))t.doors.push(G.activeDoor);
+  G.lastSale={id:Date.now(),teamName:t.name,teamColor:t.color,doorName:d.name,doorIcon:d.icon,price:d.price};
+  showSoldFlash(`${t.name} bought ${d.icon} ${d.name} for ${d.price} coins`);
+  addScore(ti,2,`🚪 ${d.short} −${d.price}🪙 +2`);
+  sndBuy();log(`SOLD: ${t.name} bought ${d.name}`);
+}
+
+function acceptChallenge(){
+  if(G.activeDoor===null)return;
+  const ti=+document.getElementById('buyTeam').value;
+  const d=DOORS[G.activeDoor];const t=G.teams[ti];
+  if(t.coins<d.price){log(`${t.name}: not enough coins (${t.coins}/${d.price})`);return;}
+  G.challengeAccepted=true;
+  animateCoin(ti,d.price);
+  t.coins-=d.price;
+  if(!t.doors.includes(G.activeDoor))t.doors.push(G.activeDoor);
+  G.lastSale={id:Date.now(),teamName:t.name,teamColor:t.color,doorName:d.name,doorIcon:d.icon,price:d.price};
+  addScore(ti,3,'✓ Challenge +3');
+  addScore(ti,2,`🚪 ${d.short} −${d.price}🪙 +2`);
+  showSoldFlash(`${t.name} earned ${d.icon} ${d.name}! +3 +2`);
+  sndBuy();log(`ACCEPTED: ${t.name} bought ${d.name}`);
+  G.activeDoor=null;G.claimedBy=null;G.challengeAccepted=false;
+  const b2=document.getElementById('activeDoorBanner');if(b2)b2.style.display='none';
+  const ins2=document.getElementById('roundInstruction');if(ins2)ins2.classList.add('show');
+  renderDoors();renderTeams();renderQuestions();renderRotation();save();
+}
+
+function rescueChallenge(){
+  // Give the claiming team 10 more seconds
+  G.timerMode='rescue';G.timerBase=10;G.timerLeft=10;G.timerRunning=false;
+  const ti=+document.getElementById('buyTeam').value;
+  log(`Rescue: 10s for ${G.teams[ti].name}`);
+  setMode('s30'); // reuse 30s mode visually, override left
+  G.timerLeft=10;G.timerBase=10;
+  updateTimerDisplay();save();
+  // Auto-start rescue timer
+  setTimeout(()=>toggleTimer(),200);
+}
+
+function releaseDoor(){
+  if(G.activeDoor===null)return;
+  const d=DOORS[G.activeDoor];
+  log(`Released: ${d.name} back to market`);
+  G.activeDoor=null;G.claimedBy=null;G.challengeAccepted=false;
+  G.teams.forEach(t=>t.spoke=0);
+  const b=document.getElementById('activeDoorBanner');if(b)b.style.display='none';
+  const ins=document.getElementById('roundInstruction');if(ins)ins.classList.add('show');
+  renderDoors();renderTeams();renderQuestions();renderRotation();save();
+}
+
+function claimDoor(teamIdx){
+  if(G.activeDoor===null||G.claimedBy!==null)return;
+  G.claimedBy=teamIdx;
+  const t=G.teams[teamIdx];
+  log(`CLAIMED: ${t.name} claimed ${DOORS[G.activeDoor].name}`);
+  // Set the buy team selector to the claiming team
+  const sel=document.getElementById('buyTeam');
+  if(sel)sel.value=String(teamIdx);
+  renderTeams();renderRotation();save();
+  showSoldFlash(`${t.name} claimed the door!`);
+}
+
+function renderRotation(){
+  const el=document.getElementById('rotationTracker');if(!el)return;
+  if(G.activeDoor===null){
+    el.innerHTML='<span style="color:var(--muted)">Open a door to see rotation.</span>';return;
+  }
+  const claimed=G.claimedBy!==null&&G.claimedBy!==undefined?G.teams[G.claimedBy]:null;
+  if(!claimed){
+    el.innerHTML='<span style="color:#D97706;font-weight:800">⏳ Waiting for claim…</span>';return;
+  }
+  const teamSize=claimed.teamSize||4;
+  const performed=G.performerHistory?G.performerHistory.filter(h=>h.teamIdx===G.claimedBy).length:0;
+  const dots=Array.from({length:teamSize},(_,i)=>{
+    const done=i<performed;
+    return `<div style="width:22px;height:22px;border-radius:50%;
+      background:${done?claimed.color:'rgba(0,0,0,.08)'};
+      border:2px solid ${done?claimed.color:'rgba(0,0,0,.15)'};
+      transition:.3s;
+      ${done?'box-shadow:0 0 8px '+claimed.color:''}"></div>`;
+  }).join('');
+  const allDone=performed>=teamSize;
+  el.innerHTML=`
+    <div style="font-size:.72rem;font-weight:800;color:${claimed.color};margin-bottom:6px">${claimed.name}</div>
+    <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">${dots}</div>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:.7rem;color:#555">${performed} of ${teamSize} performed</span>
+      <button onclick="markPerformedNext()" style="font-size:.65rem;padding:3px 8px;border-radius:6px;
+        border:1.5px solid ${claimed.color};background:color-mix(in srgb,${claimed.color} 10%,white);
+        color:${claimed.color};cursor:pointer;font-weight:800">
+        ${allDone?'↺ Reset':'✓ Mark done'}
+      </button>
+    </div>
+    ${allDone?'<div style="font-size:.68rem;color:#D97706;margin-top:4px;font-weight:700">All performed — press Reset to restart</div>':''}`;
+}
+
+function markPerformedNext(){
+  if(!G.performerHistory)G.performerHistory=[];
+  if(G.claimedBy===null||G.claimedBy===undefined)return;
+  const claimed=G.teams[G.claimedBy];
+  if(!claimed)return;
+  const performed=G.performerHistory.filter(h=>h.teamIdx===G.claimedBy).length;
+  if(performed>=claimed.teamSize){
+    // Reset — all done, start again
+    G.performerHistory=G.performerHistory.filter(h=>h.teamIdx!==G.claimedBy);
+  } else {
+    G.performerHistory.push({doorId:G.activeDoor,teamIdx:G.claimedBy,studentIdx:performed,ts:Date.now()});
+  }
+  renderRotation();save();
+}
+
+function markPerformed(teamIdx,studentIdx){
+  if(!G.performerHistory)G.performerHistory=[];
+  G.performerHistory.push({doorId:G.activeDoor,teamIdx,studentIdx,ts:Date.now()});
+  renderRotation();save();
+}
+
+function showSoldFlash(msg){
+  const old=document.querySelector('.sold-flash');if(old)old.remove();
+  const el=document.createElement('div');el.className='sold-flash';
+  el.innerHTML=`<strong>SOLD!</strong> ${msg}`;
+  document.body.appendChild(el);setTimeout(()=>el.remove(),2300);
+}
+
+function animateCoin(ti,amt){
+  const el=document.createElement('div');el.className='coin-fly';el.textContent=`−${amt}🪙`;
+  const cards=document.querySelectorAll('.tc');const card=cards[ti];
+  if(card){const r=card.getBoundingClientRect();el.style.left=r.left+r.width/2-20+'px';el.style.top=r.top+10+'px';}
+  else{el.style.left='50%';el.style.top='50%';}
+  document.body.appendChild(el);setTimeout(()=>el.remove(),900);
+}
+
+function addScore(i,pts,label){G.teams[i].score+=pts;G.teams[i].bd.push(label||`+${pts}`);renderTeams();save();}
+function sc(pts,label){const ti=+document.getElementById('buyTeam').value;addScore(ti,pts,label);log(`${G.teams[ti].name}: ${label}`);}
+
+function setRound(i){
+  G.round=i;renderRounds();renderSteps();log(`→ ${ROUNDS[i].name}`);save();
+}
+
+function revealPower(){
+  document.getElementById('powerModal').classList.add('show');
+  G.teams.forEach((t,i)=>{
+    if(t.doors.includes(3)&&t.doors.includes(4)){addScore(i,5,'⭐ Power +5');log(`${t.name}: Power Combination! +5`);}
+  });
+  sndPower();
+}
+
+function revealCost(i){
+  if(G.revealedCosts.includes(i))return;
+  const d=DOORS[i];G.revealedCosts.push(i);
+  const owners=G.teams.filter(t=>t.doors.includes(i));
+  document.getElementById('hcTitle').textContent=`⚠ ${d.name} — Hidden Cost`;
+  document.getElementById('hcIcon').textContent=d.icon;
+  document.getElementById('hcText').textContent=d.cost;
+  document.getElementById('hcOwners').textContent=owners.length?'Owned by: '+owners.map(o=>o.name).join(', '):'No team owns this door.';
+  document.getElementById('hcModal').classList.add('show');
+  renderHCGrid();save();sndReveal();log(`Revealed: ${d.name} cost`);
+}
+
+function log(m){const el=document.getElementById('log');if(el)el.insertAdjacentHTML('afterbegin',`<div class="li">${m}</div>`);}
+
+// TIMER
+const MODES={
+  prep:{label:'TEAM PREPARATION — 2:00',base:120,color:'#7C3AED'},
+  s30:{label:'SPEAKING TURN — 30 SEC',base:30,color:'#17324D'},
+  s45:{label:'SPEAKING TURN — 45 SEC',base:45,color:'#FF6B00'}
+};
+
+function setMode(m){
+  clearInterval(timerInt);timerInt=null;
+  G.timerMode=m;G.timerBase=MODES[m].base;G.timerLeft=MODES[m].base;G.timerRunning=false;
+  document.querySelectorAll('.tm-btn').forEach(b=>b.classList.remove('am-prep','am-spk'));
+  const map={prep:'tmPrep',s30:'tmS30',s45:'tmS45'};
+  const btn=document.getElementById(map[m]);
+  if(btn)btn.classList.add(m==='prep'?'am-prep':'am-spk');
+  document.getElementById('tStart').textContent='Start';
+  updateTimerDisplay();save();
+}
+
+function toggleTimer(){
+  if(!G.timerMode)return;
+  if(G.timerRunning){
+    clearInterval(timerInt);timerInt=null;G.timerRunning=false;
+    document.getElementById('tStart').textContent='Resume';
+    updateTimerDisplay();save();
+  }else{
+    G.timerRunning=true;document.getElementById('tStart').textContent='Pause';
+    updateTimerDisplay();save();
+    timerInt=setInterval(()=>{
+      G.timerLeft--;
+      if(G.timerLeft===15)sndWarn();
+      if(G.timerLeft<=5&&G.timerLeft>0)sndDanger();
+      if(G.timerLeft<=0){
+        clearInterval(timerInt);timerInt=null;G.timerRunning=false;G.timerLeft=0;
+        document.getElementById('tStart').textContent='Start';sndReveal();
+        save(); // broadcast on stop
+      } else {
+        updateTimerDisplay();
+        // Only broadcast every 5 seconds — not every tick
+        if(G.timerLeft%5===0)save();
+        else try{localStorage.setItem(CH,JSON.stringify(G));}catch(e){} // local only
+      }
+    },1000);
+  }
+}
+
+function stopTimer(){
+  // Teacher override: stop whichever speaking timer is currently active.
+  clearInterval(timerInt);timerInt=null;
+  G.timerRunning=false;
+  if(G.speakingTimer){G.speakingTimer.running=false;}
+  const btn=document.getElementById('tStart');if(btn)btn.textContent='Start';
+  updateTimerDisplay();save();
+}
+
+function resetTimer(){
+  clearInterval(timerInt);timerInt=null;
+  G.timerRunning=false;
+  G.timerLeft=G.timerBase||0;
+  // Reset must also clear student-started speaking timers so teacher has real control.
+  if(G.speakingTimer){G.speakingTimer.running=false;G.speakingTimer.left=0;}
+  const btn=document.getElementById('tStart');if(btn)btn.textContent='Start';
+  updateTimerDisplay();save();
+}
+
+function updateTimerDisplay(){
+  const el=document.getElementById('tNum');const lbl=document.getElementById('tLabel');
+  const floatBar=document.getElementById('floatSpeakTimer');
+  const floatDigits=document.getElementById('floatSpeakDigits');
+  const floatLabel=floatBar?floatBar.querySelector('.float-speak-label'):null;
+  const floatHelp=floatBar?floatBar.querySelector('.float-speak-help'):null;
+  const hideFloat=()=>{if(floatBar)floatBar.className='float-speak-timer';};
+  if(!el)return;
+
+  // Student-started speaking timer takes priority over teacher timer.
+  const st=G.speakingTimer;
+  if(st&&st.running&&st.left>0){
+    const s=st.left;
+    const timeText=`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+    el.textContent=timeText;el.className='t-digits'+(s<=5?' danger':s<=15?' warn':'');
+    el.style.color=s<=5?'#DC2626':s<=15?'#D97706':'#FF6B00';
+    if(lbl){lbl.textContent='STUDENT SPEAKING';lbl.style.color='#FF6B00';}
+    if(floatDigits)floatDigits.textContent=timeText;
+    if(floatLabel)floatLabel.textContent=(st.teamName||'Student')+' Speaking';
+    if(floatHelp)floatHelp.textContent='Student timer visible';
+    if(floatBar)floatBar.className='float-speak-timer show'+(s<=5?' danger':s<=15?' warn':'');
+    const prog=s/(st.base||45);
+    const top=document.getElementById('tSandTop');const bot=document.getElementById('tSandBot');
+    if(top){top.setAttribute('height',prog*12);top.setAttribute('y',8+(12-prog*12));top.setAttribute('fill',s<=5?'#DC2626':s<=15?'#D97706':'#FF6B00');}
+    if(bot){bot.setAttribute('height',(1-prog)*12);bot.setAttribute('y',32-(1-prog)*12);bot.setAttribute('fill',s<=5?'#DC2626':s<=15?'#D97706':'#FF6B00');}
+    return;
+  }
+
+  if(!G.timerMode){el.textContent='--:--';el.style.color='var(--muted)';if(lbl)lbl.textContent='Select a mode';hideFloat();return;}
+  const s=G.timerLeft;
+  const timeText=`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+  el.textContent=timeText;
+  const mc=MODES[G.timerMode];
+  el.className='t-digits'+(s<=5?' danger':s<=15?' warn':'');
+  el.style.color=s<=5?'#DC2626':s<=15?'#D97706':mc.color;
+  if(lbl){lbl.textContent=mc.label;lbl.style.color=mc.color;}
+  const isSpeaking=(G.timerMode==='s30'||G.timerMode==='s45')&&G.timerRunning;
+  if(floatBar&&floatDigits){
+    floatDigits.textContent=timeText;
+    if(floatLabel)floatLabel.textContent='Speaking Timer';
+    if(floatHelp)floatHelp.textContent='Teacher timer visible';
+    floatBar.className='float-speak-timer'+(isSpeaking?' show':'')+(s<=5?' danger':s<=15?' warn':'');
+  }
+  // Sand clock small
+  const prog=G.timerBase>0?s/G.timerBase:1;
+  const top=document.getElementById('tSandTop');const bot=document.getElementById('tSandBot');
+  if(top){top.setAttribute('height',prog*12);top.setAttribute('y',8+(12-prog*12));top.setAttribute('fill',s<=5?'#DC2626':s<=15?'#D97706':'#7C3AED');}
+  if(bot){bot.setAttribute('height',(1-prog)*12);bot.setAttribute('y',32-(1-prog)*12);bot.setAttribute('fill',s<=5?'#DC2626':s<=15?'#D97706':'#7C3AED');}
+}
+
+function generateQR(){
+  const url='https://career-city-811d01.netlify.app/student.html?room='+G.room;
+  const c=document.getElementById('qrCanvas');
+  if(c&&typeof QRious!=='undefined')new QRious({element:c,value:url,size:150,background:'#ffffff',foreground:'#071421'});
+  const cl=document.getElementById('qrCanvasLarge');
+  if(cl&&typeof QRious!=='undefined')new QRious({element:cl,value:url,size:320,background:'#ffffff',foreground:'#071421'});
+}
+
+function toggleQR(){
+  const ov=document.getElementById('qrOverlay');if(!ov)return;
+  const showing=ov.style.display==='flex';
+  ov.style.display=showing?'none':'flex';
+}
+
+loadSaved();renderAll();
+</script>
+
+
+
+<style id="career-city-final-fixes">
+/* Teacher float timer — visible, clean */
+.float-speak-timer{
+  display:flex!important;
+  opacity:0;
+  top:58px!important;
+  width:min(740px,calc(100vw - 320px))!important;
+  padding:12px 20px!important;
+  z-index:9999!important;
+}
+.float-speak-timer.show{opacity:1!important;}
+.float-speak-digits{font-size:4.6rem!important;min-width:150px!important;}
+
+/* Claim status bar */
+.claim-status-bar{
+  display:flex;align-items:center;gap:10px;padding:8px 14px;
+  border-radius:10px;margin-bottom:8px;font-size:.82rem;font-weight:700;
+  border:1.5px solid;animation:fadeIn .3s ease;
+}
+.claim-status-bar.unclaimed{background:#FFF8F0;border-color:#E8DDD5;color:#888}
+.claim-status-bar.claimed{background:#ECFDF5;border-color:#6EE7B7;color:#065F46}
+</style>
+</body>
+</html>
+
+
