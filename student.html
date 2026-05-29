@@ -911,15 +911,7 @@ function buildTeamBtns(){
   document.getElementById('teamBtns').innerHTML=TNAMES.map((n,i)=>
     `<button class="tb ${i===0?'sel':''}" style="${i===0?'--tc:'+TCOLS[0]+';border-color:'+TCOLS[0]:''}"
       id="tb${i}" onclick="selectTeam(${i},this)">${n}</button>`).join('');
-  // Auto-join from URL if room param present
-  const urlRoom=new URLSearchParams(window.location.search).get('room');
-  if(urlRoom){
-    // Pre-select first team and auto-proceed to team selection (no PIN needed)
-    setTimeout(()=>{
-      // Just show the page normally — room is available
-      document.title='Career City — Join';
-    },100);
-  }
+  // Auto-join from URL if room param present — handled by top-level _urlRoom
 }
 
 function selectTeam(i,btn){
