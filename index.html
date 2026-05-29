@@ -58,7 +58,7 @@ button,input,select{font-family:inherit}
 /* MAIN LAYOUT */
 .main{display:grid;grid-template-columns:1fr 300px;gap:12px;padding:12px;
   height:calc(100vh - 52px - 42px);min-height:0}
-.left{display:grid;grid-template-rows:auto 1fr;gap:12px;min-height:0;overflow:hidden}
+.left{display:grid;grid-template-rows:auto auto 1fr;gap:12px;min-height:0;overflow:hidden}
 .right{display:flex;flex-direction:column;gap:10px;overflow-y:auto}
 
 /* DOOR TRACK */
@@ -588,14 +588,15 @@ html,body{background:radial-gradient(circle at 50% 0%,#FFF8EA 0%,#F4EFE5 44%,#E7
       <div class="panel">
         <div class="pt" id="boardRound">ROUND 0 — PRE-GAME</div>
         <div class="door-track" id="doorTrack"></div>
-        <!-- ACTIVE DOOR DESCRIPTION — replaces round instruction when door is open -->
-        <div id="activeDoorBanner" style="display:none;margin-top:6px;padding:8px 12px;
-          background:linear-gradient(135deg,#FFFDF8,#F4E8D2);
-          border-left:3px solid var(--gold,#C99A3B);border-radius:8px">
-          <div id="activeDoorBannerName" style="font-size:.72rem;font-weight:900;color:var(--navy,#0B1A2B);margin-bottom:2px"></div>
-          <div id="activeDoorBannerStory" style="font-size:.75rem;color:#555;line-height:1.5"></div>
-        </div>
         <div class="round-instruction" id="roundInstruction"></div>
+      </div>
+      <!-- ACTIVE DOOR INFO — shown between doors and teams when a door is opened -->
+      <div id="activeDoorBanner" style="display:none;padding:10px 14px;
+        background:linear-gradient(135deg,#FFFDF8,#F4E8D2);
+        border:1.5px solid var(--gold,#C99A3B);border-radius:12px;flex-shrink:0">
+        <div id="activeDoorBannerName" style="font-size:.78rem;font-weight:900;color:var(--navy,#0B1A2B);margin-bottom:4px"></div>
+        <div id="activeDoorBannerStory" style="font-size:.78rem;color:#555;line-height:1.5;margin-bottom:6px"></div>
+        <div id="activeDoorBannerQuestions" style="display:flex;flex-direction:column;gap:4px"></div>
       </div>
       <div class="panel teams-panel">
         <div class="pt">Teams &amp; Scores — Tap + After Each Student Speaks</div>
@@ -1170,8 +1171,17 @@ function openDoor(i){
     const d=DOORS[i];
     bannerName.textContent=`${d.icon} ${d.name} — ${d.price} coins`;
     bannerStory.textContent=d.story;
+    const qEl=document.getElementById('activeDoorBannerQuestions');
+    if(qEl){
+      qEl.innerHTML=d.q.map(([lv,tx])=>`
+        <div style="display:flex;gap:8px;align-items:flex-start;padding:5px 8px;background:white;border-radius:7px;border:1px solid var(--border)">
+          <span style="flex-shrink:0;padding:2px 7px;border-radius:999px;font-size:.6rem;font-weight:900;
+            background:${lv==='start'?'#ECFDF5':lv==='build'?'#EFF6FF':'#F5F3FF'};
+            color:${lv==='start'?'#065F46':lv==='build'?'#1E40AF':'#5B21B6'}">${lv==='start'?'+1':lv==='build'?'+2':'+3'}</span>
+          <span style="font-size:.78rem;color:#333;line-height:1.5">${tx}</span>
+        </div>`).join('');
+    }
     banner.style.display='block';
-    // Hide round instruction to avoid crowding
     const ins=document.getElementById('roundInstruction');
     if(ins)ins.classList.remove('show');
   }
